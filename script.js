@@ -1,92 +1,87 @@
 // script.js
+// --- Setup Canvas ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-canvas.width = 800;
-canvas.height = 600;
+// Nên đặt kích thước canvas ở đây để đảm bảo nó được đặt trước khi game bắt đầu
+// Bạn có thể làm cho nó responsive sau
+canvas.width = Math.min(window.innerWidth - 20, 800); // Giới hạn chiều rộng
+canvas.height = Math.min(window.innerHeight - 180, 600); // Trừ không gian cho tiêu đề và thông tin
 
-// --- Hình ảnh (tùy chọn) ---
-let tankBodyImg = new Image();
-let tankTurretImg = new Image();
-let bulletImg = new Image();
-let imagesLoaded = 0;
-const totalImages = 0; // Đặt là 3 nếu bạn dùng ảnh
+// --- Game Constants ---
+const TANK_WIDTH = 50;
+const TANK_HEIGHT = 40;
+const TURRET_RADIUS = 10; // Bán kính đế tháp pháo
+const BARREL_LENGTH = 30;
+const BARREL_WIDTH = 8;
+const BULLET_RADIUS = 5;
+const BULLET_SPEED = 6;
+const TANK_SPEED = 1.8;
+const TANK_ROTATION_SPEED = 0.04;
+const TURRET_ROTATION_SPEED = 0.06;
+const SHOOT_COOLDOWN = 400; //ms
 
-/* // Bỏ comment nếu dùng ảnh
-tankBodyImg.src = 'tank_body.png';
-tankTurretImg.src = 'tank_turret.png';
-bulletImg.src = 'bullet.png';
+// --- Game State ---
+let playerTank;
+let bullets = [];
+let moveJoystick, aimJoystick, fireButton;
+let gameLoopRequest; // Để quản lý requestAnimationFrame
 
-function imageLoaded() {
-    imagesLoaded++;
-    if (imagesLoaded === totalImages) {
-        initGame();
-    }
+// --- Utility Functions ---
+function degreesToRadians(degrees) {
+    return degrees * (Math.PI / 180);
 }
-if (totalImages > 0) {
-    tankBodyImg.onload = imageLoaded;
-    tankTurretImg.onload = imageLoaded;
-    bulletImg.onload = imageLoaded;
-} else {
-    initGame();
+
+function getDistance(x1, y1, x2, y2) {
+    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
-*/
-initGame(); // Khởi tạo ngay nếu không dùng ảnh
 
-
-// --- Lớp Joystick ---
+// --- Joystick Class ---
 class Joystick {
-    constructor(x, y, radius, stickRadius, colorBase = 'rgba(128, 128, 128, 0.5)', stickColor = 'rgba(80, 80, 80, 0.7)') {
+    constructor(x, y, baseRadius, stickRadius) {
         this.baseX = x;
         this.baseY = y;
-        this.radius = radius; // Bán kính của vùng joystick
-        this.stickRadius = stickRadius; // Bán kính của núm joystick
+        this.baseRadius = baseRadius;
+        this.stickRadius = stickRadius;
         this.stickX = x;
         this.stickY = y;
-        this.colorBase = colorBase;
-        this.stickColor = stickColor;
         this.isActive = false;
-        this.touchId = null; // Để theo dõi touch event cụ thể (cho multi-touch)
-
-        // Giá trị output của joystick
-        this.valueX = 0; // Từ -1 đến 1
-        this.valueY = 0; // Từ -1 đến 1
+        this.touchId = null;
+        this.valueX = 0; // -1 to 1
+        this.valueY = 0; // -1 to 1
     }
 
     draw() {
-        // Vẽ nền joystick
+        // Base
         ctx.beginPath();
-        ctx.arc(this.baseX, this.baseY, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.colorBase;
+        ctx.arc(this.baseX, this.baseY, this.baseRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(150, 150, 150, 0.4)';
         ctx.fill();
-        ctx.closePath();
 
-        // Vẽ núm joystick
+        // Stick
         ctx.beginPath();
         ctx.arc(this.stickX, this.stickY, this.stickRadius, 0, Math.PI * 2);
-        ctx.fillStyle = this.stickColor;
+        ctx.fillStyle = 'rgba(100, 100, 100, 0.7)';
         ctx.fill();
-        ctx.closePath();
     }
 
-    handleTouchStart(x, y, touchId) {
-        const distance = Math.sqrt((x - this.baseX) ** 2 + (y - this.baseY) ** 2);
-        if (distance < this.radius + this.stickRadius) { // Cho phép chạm hơi ra ngoài 1 chút
+    handleDown(eventX, eventY, touchId) {
+        if (getDistance(eventX, eventY, this.baseX, this.baseY) < this.baseRadius + this.stickRadius) {
             this.isActive = true;
             this.touchId = touchId;
-            this.updateStickPosition(x, y);
-            return true; // Joystick này đã được kích hoạt
+            this._updateStick(eventX, eventY);
+            return true;
         }
         return false;
     }
 
-    handleTouchMove(x, y, touchId) {
+    handleMove(eventX, eventY, touchId) {
         if (this.isActive && this.touchId === touchId) {
-            this.updateStickPosition(x, y);
+            this._updateStick(eventX, eventY);
         }
     }
 
-    handleTouchEnd(touchId) {
+    handleUp(touchId) {
         if (this.touchId === touchId) {
             this.isActive = false;
             this.touchId = null;
@@ -97,24 +92,21 @@ class Joystick {
         }
     }
 
-    updateStickPosition(x, y) {
-        const deltaX = x - this.baseX;
-        const deltaY = y - this.baseY;
-        const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+    _updateStick(eventX, eventY) {
+        const deltaX = eventX - this.baseX;
+        const deltaY = eventY - this.baseY;
+        const distance = getDistance(eventX, eventY, this.baseX, this.baseY);
 
-        if (distance < this.radius) {
-            this.stickX = x;
-            this.stickY = y;
+        if (distance < this.baseRadius) {
+            this.stickX = eventX;
+            this.stickY = eventY;
         } else {
-            // Giữ núm joystick trong phạm vi của nền
             const angle = Math.atan2(deltaY, deltaX);
-            this.stickX = this.baseX + this.radius * Math.cos(angle);
-            this.stickY = this.baseY + this.radius * Math.sin(angle);
+            this.stickX = this.baseX + this.baseRadius * Math.cos(angle);
+            this.stickY = this.baseY + this.baseRadius * Math.sin(angle);
         }
-
-        // Tính toán giá trị output, chuẩn hóa về -1 đến 1
-        this.valueX = (this.stickX - this.baseX) / this.radius;
-        this.valueY = (this.stickY - this.baseY) / this.radius;
+        this.valueX = (this.stickX - this.baseX) / this.baseRadius;
+        this.valueY = (this.stickY - this.baseY) / this.baseRadius;
     }
 
     getValue() {
@@ -122,13 +114,12 @@ class Joystick {
     }
 }
 
-// --- Lớp Nút Bắn ---
+// --- FireButton Class ---
 class FireButton {
-    constructor(x, y, radius, color = 'rgba(255, 0, 0, 0.6)') {
+    constructor(x, y, radius) {
         this.x = x;
         this.y = y;
         this.radius = radius;
-        this.color = color;
         this.isPressed = false;
         this.touchId = null;
     }
@@ -136,370 +127,222 @@ class FireButton {
     draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.isPressed ? 'rgba(200, 0, 0, 0.8)' : this.color;
+        ctx.fillStyle = this.isPressed ? 'rgba(255, 80, 80, 0.9)' : 'rgba(255, 0, 0, 0.6)';
         ctx.fill();
         ctx.strokeStyle = 'rgba(100,0,0,0.8)';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 3;
         ctx.stroke();
-        ctx.closePath();
-
-        // Chữ "Bắn"
+        // Text
         ctx.fillStyle = 'white';
-        ctx.font = '16px Arial';
+        ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('Bắn', this.x, this.y);
     }
 
-    handleTouchStart(x, y, touchId) {
-        const distance = Math.sqrt((x - this.x) ** 2 + (y - this.y) ** 2);
-        if (distance < this.radius) {
+    handleDown(eventX, eventY, touchId) {
+        if (getDistance(eventX, eventY, this.x, this.y) < this.radius) {
             this.isPressed = true;
             this.touchId = touchId;
             return true;
         }
         return false;
     }
-
-    handleTouchEnd(touchId) {
+    handleUp(touchId) {
         if (this.touchId === touchId) {
             this.isPressed = false;
             this.touchId = null;
         }
     }
-
-    isJustPressed() { // Chỉ trả về true một lần khi vừa được nhấn
-        if (this.isPressed && !this.wasPressedLastFrame) {
-            this.wasPressedLastFrame = true;
-            return true;
-        }
-        if (!this.isPressed) {
-            this.wasPressedLastFrame = false;
-        }
-        return false;
-    }
 }
 
 
-// --- Lớp Xe Tăng (Tương tự như trước, có một vài điều chỉnh nhỏ) ---
+// --- Tank Class ---
 class Tank {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 50;
-        this.height = 40;
-        this.turretWidth = 15;
-        this.turretHeight = 35;
-        this.barrelLength = 25;
-        this.barrelWidth = 8;
-
-        this.bodyAngle = 0;
-        this.turretAngle = 0;
-
-        this.speed = 2;
-        this.rotationSpeed = 0.05;
-        this.turretRotationSpeed = 0.07;
-
-        this.colorBody = 'darkgreen';
-        this.colorTurret = 'green';
-        this.colorBarrel = 'darkgray';
-
-        this.health = 100;
-        this.shootCooldown = 500;
+        this.bodyAngle = 0; // radians, 0 is facing right
+        this.turretAngle = 0; // radians, 0 is facing right (relative to world)
         this.lastShotTime = 0;
     }
 
     draw() {
-        // Vẽ thân xe
+        // Body
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.bodyAngle);
-
-        if (totalImages > 0 && tankBodyImg.complete) {
-            ctx.drawImage(tankBodyImg, -this.width / 2, -this.height / 2, this.width, this.height);
-        } else {
-            ctx.fillStyle = this.colorBody;
-            ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.fillRect(this.width / 2 - 10, -5, 10, 10);
-        }
+        ctx.fillStyle = 'darkgreen';
+        ctx.fillRect(-TANK_WIDTH / 2, -TANK_HEIGHT / 2, TANK_WIDTH, TANK_HEIGHT);
+        // Detail to show front of body
+        ctx.fillStyle = 'lime';
+        ctx.fillRect(TANK_WIDTH / 2 - 10, -5, 10, 10);
         ctx.restore();
 
-        // Vẽ tháp pháo
+        // Turret
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.turretAngle);
-
-        if (totalImages > 0 && tankTurretImg.complete) {
-            ctx.drawImage(tankTurretImg, -this.turretWidth/2 , -this.barrelLength, this.turretWidth, this.turretHeight);
-        } else {
-            ctx.fillStyle = this.colorTurret;
-            ctx.fillRect(-this.turretWidth / 2, -this.turretWidth / 2, this.turretWidth, this.turretWidth);
-            ctx.fillStyle = this.colorBarrel;
-            ctx.fillRect(-this.barrelWidth / 2, -this.barrelLength, this.barrelWidth, this.barrelLength);
-        }
+        // Barrel
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(0, -BARREL_WIDTH / 2, BARREL_LENGTH, BARREL_WIDTH);
+        // Turret Base
+        ctx.beginPath();
+        ctx.arc(0, 0, TURRET_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = 'green';
+        ctx.fill();
         ctx.restore();
     }
 
-    // Điều khiển bằng joystick
-    control(moveStickValue, turretStickValue) {
-        // Di chuyển thân xe
-        const moveMagnitude = moveStickValue.y; // y của joystick điều khiển tiến/lùi
-        if (Math.abs(moveMagnitude) > 0.1) { // Ngưỡng để tránh di chuyển khi joystick ở gần tâm
-            this.move(-moveMagnitude); // - vì joystick y dương là xuống, game y dương là xuống
-        }
+    update(moveInput, aimInput) {
+        // Movement & Body Rotation from moveJoystick
+        if (Math.abs(moveInput.x) > 0.1 || Math.abs(moveInput.y) > 0.1) {
+            const targetBodyAngle = Math.atan2(moveInput.y, moveInput.x);
+            let angleDiff = targetBodyAngle - this.bodyAngle;
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-        // Xoay thân xe
-        const bodyRotateMagnitude = moveStickValue.x; // x của joystick điều khiển xoay thân
-        if (Math.abs(bodyRotateMagnitude) > 0.1) {
-            this.rotateBody(bodyRotateMagnitude);
-        }
-
-        // Xoay tháp pháo
-        if (turretStickValue.x !== 0 || turretStickValue.y !== 0) {
-            // Tính góc dựa trên vector của joystick
-            // Điều này cho phép xoay tháp pháo tự do theo hướng joystick
-            const targetTurretAngle = Math.atan2(turretStickValue.y, turretStickValue.x) + Math.PI / 2; // +PI/2 để nòng hướng lên
-            
-            // Xoay tháp pháo từ từ về hướng targetAngle
-            let angleDiff = targetTurretAngle - this.turretAngle;
-            // Chuẩn hóa angleDiff về khoảng (-PI, PI]
-            while (angleDiff <= -Math.PI) angleDiff += 2 * Math.PI;
-            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-
-            if (Math.abs(angleDiff) > 0.01) { // Ngưỡng nhỏ để dừng xoay
-                 this.turretAngle += Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), this.turretRotationSpeed);
+            if (Math.abs(angleDiff) > TANK_ROTATION_SPEED) {
+                this.bodyAngle += Math.sign(angleDiff) * TANK_ROTATION_SPEED;
+            } else {
+                this.bodyAngle = targetBodyAngle;
             }
+
+            // Move only if facing roughly the direction of joystick
+            // Or, always move based on joystick magnitude if preferred
+            const moveMagnitude = Math.sqrt(moveInput.x**2 + moveInput.y**2);
+            const effectiveSpeed = TANK_SPEED * Math.min(1, moveMagnitude); // Cap speed
+
+            this.x += effectiveSpeed * Math.cos(this.bodyAngle);
+            this.y += effectiveSpeed * Math.sin(this.bodyAngle);
         }
+
+
+        // Turret Rotation from aimJoystick
+        if (Math.abs(aimInput.x) > 0.1 || Math.abs(aimInput.y) > 0.1) {
+            this.turretAngle = Math.atan2(aimInput.y, aimInput.x);
+        }
+
+        // Keep tank in bounds
+        this.x = Math.max(TANK_WIDTH / 2, Math.min(canvas.width - TANK_WIDTH / 2, this.x));
+        this.y = Math.max(TANK_HEIGHT / 2, Math.min(canvas.height - TANK_HEIGHT / 2, this.y));
     }
-
-
-    move(directionMagnitude) { // directionMagnitude từ -1 đến 1
-        const effectiveSpeed = directionMagnitude * this.speed;
-        this.x += effectiveSpeed * Math.cos(this.bodyAngle);
-        this.y += effectiveSpeed * Math.sin(this.bodyAngle);
-
-        this.x = Math.max(this.width / 2, Math.min(canvas.width - this.width / 2, this.x));
-        this.y = Math.max(this.height / 2, Math.min(canvas.height - this.height / 2, this.y));
-    }
-
-    rotateBody(directionMagnitude) { // directionMagnitude từ -1 đến 1
-        this.bodyAngle += directionMagnitude * this.rotationSpeed;
-    }
-
-    // rotateTurret đã được xử lý trong control()
 
     shoot() {
         const currentTime = Date.now();
-        if (currentTime - this.lastShotTime > this.shootCooldown) {
+        if (currentTime - this.lastShotTime > SHOOT_COOLDOWN) {
             this.lastShotTime = currentTime;
-            const barrelTipX = this.x + (this.barrelLength - 5) * Math.cos(this.turretAngle - Math.PI / 2);
-            const barrelTipY = this.y + (this.barrelLength - 5) * Math.sin(this.turretAngle - Math.PI / 2);
+            const barrelTipX = this.x + BARREL_LENGTH * Math.cos(this.turretAngle);
+            const barrelTipY = this.y + BARREL_LENGTH * Math.sin(this.turretAngle);
             bullets.push(new Bullet(barrelTipX, barrelTipY, this.turretAngle));
+            // console.log("Bang!"); // For debugging
         }
     }
 }
 
-// --- Lớp Đạn (Không thay đổi nhiều) ---
+// --- Bullet Class ---
 class Bullet {
     constructor(x, y, angle) {
         this.x = x;
         this.y = y;
-        this.radius = 4;
-        this.speed = 7;
         this.angle = angle;
-        this.color = 'orange';
     }
 
     draw() {
-        if (totalImages > 0 && bulletImg.complete) {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.angle);
-            ctx.drawImage(bulletImg, -this.radius, -this.radius / 2, this.radius * 2, this.radius);
-            ctx.restore();
-        } else {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = this.color;
-            ctx.fill();
-            ctx.closePath();
-        }
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, BULLET_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = 'orange';
+        ctx.fill();
     }
 
     update() {
-        this.x += this.speed * Math.cos(this.angle - Math.PI / 2);
-        this.y += this.speed * Math.sin(this.angle - Math.PI / 2);
+        this.x += BULLET_SPEED * Math.cos(this.angle);
+        this.y += BULLET_SPEED * Math.sin(this.angle);
     }
 
     isOffScreen() {
-        return (
-            this.x < -this.radius ||
-            this.x > canvas.width + this.radius ||
-            this.y < -this.radius ||
-            this.y > canvas.height + this.radius
-        );
+        return this.x < -BULLET_RADIUS || this.x > canvas.width + BULLET_RADIUS ||
+               this.y < -BULLET_RADIUS || this.y > canvas.height + BULLET_RADIUS;
     }
 }
 
-
-// --- Khởi Tạo Game và Vòng Lặp ---
-let playerTank;
-let bullets = [];
-let keys = {}; // Vẫn giữ lại cho điều khiển bàn phím (nếu muốn)
-
-// Khai báo joystick
-let moveJoystick;
-let turretJoystick;
-let fireButton;
-
-function initGame() {
-    playerTank = new Tank(canvas.width / 2, canvas.height / 2);
-    bullets = [];
-    keys = {};
-
-    // Khởi tạo joystick và nút bắn
-    // Joystick di chuyển (trái dưới)
-    moveJoystick = new Joystick(100, canvas.height - 100, 60, 30);
-    // Joystick tháp pháo (phải dưới)
-    turretJoystick = new Joystick(canvas.width - 100, canvas.height - 100, 60, 30);
-    // Nút bắn (gần joystick tháp pháo)
-    fireButton = new FireButton(canvas.width - 100, canvas.height - 200, 40);
-
-
-    if (!gameLoopRequest) {
-        gameLoop();
-    }
+// --- Input Handling ---
+function getTouchPos(canvasDom, touchEvent) {
+    const rect = canvasDom.getBoundingClientRect();
+    // For single touch, use touchEvent.clientX/Y or touchEvent.touches[0].clientX/Y
+    // For multi-touch, iterate through changedTouches
+    return {
+        x: touchEvent.clientX - rect.left,
+        y: touchEvent.clientY - rect.top
+    };
 }
 
-// Xử lý Input (Bàn phím và Touch/Mouse)
-// Bàn phím (giữ lại để debug hoặc tùy chọn)
-window.addEventListener('keydown', (e) => {
-    keys[e.key.toLowerCase()] = true;
-    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) {
-        e.preventDefault();
-    }
-});
-window.addEventListener('keyup', (e) => {
-    keys[e.key.toLowerCase()] = false;
-});
+function handleMouseDown(event) {
+    const pos = getTouchPos(canvas, event);
+    if (moveJoystick.handleDown(pos.x, pos.y, 'mouse')) return;
+    if (aimJoystick.handleDown(pos.x, pos.y, 'mouse')) return;
+    if (fireButton.handleDown(pos.x, pos.y, 'mouse')) return;
+}
 
-// Touch Events
-canvas.addEventListener('touchstart', handleTouchStart, false);
-canvas.addEventListener('touchmove', handleTouchMove, false);
-canvas.addEventListener('touchend', handleTouchEnd, false);
-canvas.addEventListener('touchcancel', handleTouchEnd, false); // Xử lý như touchend
+function handleMouseMove(event) {
+    const pos = getTouchPos(canvas, event);
+    moveJoystick.handleMove(pos.x, pos.y, 'mouse');
+    aimJoystick.handleMove(pos.x, pos.y, 'mouse');
+    // Fire button doesn't need move
+}
 
-// Mouse Events (Mô phỏng touch cho desktop testing)
-let isMouseDown = false;
-canvas.addEventListener('mousedown', (e) => {
-    isMouseDown = true;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    // Sử dụng ID = 0 cho chuột
-    moveJoystick.handleTouchStart(x, y, 0);
-    turretJoystick.handleTouchStart(x, y, 0);
-    fireButton.handleTouchStart(x,y,0);
-});
+function handleMouseUp(event) {
+    moveJoystick.handleUp('mouse');
+    aimJoystick.handleUp('mouse');
+    fireButton.handleUp('mouse');
+}
 
-canvas.addEventListener('mousemove', (e) => {
-    if (!isMouseDown) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    moveJoystick.handleTouchMove(x, y, 0);
-    turretJoystick.handleTouchMove(x, y, 0);
-    // Nút bắn không cần move
-});
-
-canvas.addEventListener('mouseup', (e) => {
-    isMouseDown = false;
-    moveJoystick.handleTouchEnd(0);
-    turretJoystick.handleTouchEnd(0);
-    fireButton.handleTouchEnd(0);
-});
-canvas.addEventListener('mouseleave', (e) => { // Nếu chuột ra khỏi canvas
-    if (isMouseDown) {
-        isMouseDown = false;
-        moveJoystick.handleTouchEnd(0);
-        turretJoystick.handleTouchEnd(0);
-        fireButton.handleTouchEnd(0);
-    }
-});
-
-
-function handleTouchStart(evt) {
-    evt.preventDefault(); // Ngăn cuộn trang trên mobile
-    const touches = evt.changedTouches;
+function handleTouchStart(event) {
+    event.preventDefault(); // Important
+    const touches = event.changedTouches;
     const rect = canvas.getBoundingClientRect();
     for (let i = 0; i < touches.length; i++) {
         const touch = touches[i];
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
-        // Thử kích hoạt từng joystick/button
-        if (moveJoystick.handleTouchStart(x, y, touch.identifier)) continue;
-        if (turretJoystick.handleTouchStart(x, y, touch.identifier)) continue;
-        if (fireButton.handleTouchStart(x, y, touch.identifier)) continue;
+        if (moveJoystick.handleDown(x, y, touch.identifier)) continue;
+        if (aimJoystick.handleDown(x, y, touch.identifier)) continue;
+        if (fireButton.handleDown(x, y, touch.identifier)) continue;
     }
 }
-
-function handleTouchMove(evt) {
-    evt.preventDefault();
-    const touches = evt.changedTouches;
+function handleTouchMove(event) {
+    event.preventDefault();
+    const touches = event.changedTouches;
     const rect = canvas.getBoundingClientRect();
     for (let i = 0; i < touches.length; i++) {
         const touch = touches[i];
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
-        moveJoystick.handleTouchMove(x, y, touch.identifier);
-        turretJoystick.handleTouchMove(x, y, touch.identifier);
-        // Nút bắn không cần move
+        moveJoystick.handleMove(x, y, touch.identifier);
+        aimJoystick.handleMove(x, y, touch.identifier);
     }
 }
-
-function handleTouchEnd(evt) {
-    evt.preventDefault();
-    const touches = evt.changedTouches;
+function handleTouchEnd(event) {
+    event.preventDefault();
+    const touches = event.changedTouches;
     for (let i = 0; i < touches.length; i++) {
         const touch = touches[i];
-        moveJoystick.handleTouchEnd(touch.identifier);
-        turretJoystick.handleTouchEnd(touch.identifier);
-        fireButton.handleTouchEnd(touch.identifier);
+        moveJoystick.handleUp(touch.identifier);
+        aimJoystick.handleUp(touch.identifier);
+        fireButton.handleUp(touch.identifier);
     }
 }
 
+// --- Game Loop ---
+function update() {
+    const moveInput = moveJoystick.getValue();
+    const aimInput = aimJoystick.getValue();
+    playerTank.update(moveInput, aimInput);
 
-function handleInput() {
-    // Điều khiển bằng joystick
-    const moveVal = moveJoystick.getValue();
-    const turretVal = turretJoystick.getValue();
-    playerTank.control(moveVal, turretVal);
-
-    if (fireButton.isPressed) { // Bắn liên tục khi giữ nút
+    if (fireButton.isPressed) {
         playerTank.shoot();
     }
-    // Hoặc nếu muốn bắn 1 lần mỗi khi nhấn:
-    // if (fireButton.isJustPressed()) {
-    //     playerTank.shoot();
-    // }
 
-
-    // Điều khiển bàn phím (vẫn giữ lại)
-    if (keys['w']) playerTank.move(1);
-    if (keys['s']) playerTank.move(-1);
-    if (keys['a']) playerTank.rotateBody(-0.5); // Giảm cường độ để không quá nhạy
-    if (keys['d']) playerTank.rotateBody(0.5);
-    if (keys['arrowleft']) playerTank.turretAngle -= playerTank.turretRotationSpeed; // Cách xoay tháp pháo cũ
-    if (keys['arrowright']) playerTank.turretAngle += playerTank.turretRotationSpeed;
-    if (keys[' ']) {
-        playerTank.shoot();
-        // keys[' '] = false; // Để tránh bắn liên tục
-    }
-}
-
-function updateGame() {
-    handleInput();
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].update();
         if (bullets[i].isOffScreen()) {
@@ -508,20 +351,60 @@ function updateGame() {
     }
 }
 
-function drawGame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    playerTank.draw();
-    bullets.forEach(bullet => bullet.draw());
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear screen
 
-    // Vẽ joysticks và nút bắn
+    playerTank.draw();
+    bullets.forEach(b => b.draw());
+
     moveJoystick.draw();
-    turretJoystick.draw();
+    aimJoystick.draw();
     fireButton.draw();
 }
 
-let gameLoopRequest;
 function gameLoop() {
-    updateGame();
-    drawGame();
+    update();
+    draw();
     gameLoopRequest = requestAnimationFrame(gameLoop);
 }
+
+// --- Initialization ---
+function init() {
+    console.log("Initializing game...");
+    playerTank = new Tank(canvas.width / 2, canvas.height / 2);
+
+    // Joystick positions (adjust as needed)
+    const joystickBaseRadius = Math.min(canvas.width, canvas.height) * 0.12; // Responsive radius
+    const joystickStickRadius = joystickBaseRadius * 0.5;
+    const joystickOffsetY = canvas.height - joystickBaseRadius - 20;
+
+    moveJoystick = new Joystick(joystickBaseRadius + 30, joystickOffsetY, joystickBaseRadius, joystickStickRadius);
+    aimJoystick = new Joystick(canvas.width - joystickBaseRadius - 30, joystickOffsetY, joystickBaseRadius, joystickStickRadius);
+    fireButton = new FireButton(canvas.width - joystickBaseRadius - 30, joystickOffsetY - joystickBaseRadius - 40, joystickBaseRadius * 0.8);
+
+    // Add event listeners
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('mouseleave', handleMouseUp); // Handle mouse leaving canvas
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+    console.log("Game initialized. Starting loop.");
+    if (gameLoopRequest) cancelAnimationFrame(gameLoopRequest); // Clear old loop if any
+    gameLoop();
+}
+
+// Start the game
+init();
+
+// Optional: Handle window resize to make canvas responsive (more advanced)
+// window.addEventListener('resize', () => {
+//     canvas.width = Math.min(window.innerWidth - 20, 800);
+//     canvas.height = Math.min(window.innerHeight - 180, 600);
+//     // Re-initialize or adjust positions of UI elements if needed
+//     init(); // Simple re-init, or better: update positions
+// });
