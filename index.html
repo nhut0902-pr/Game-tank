@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tank Battle 2D - Advanced</title>
+    <title>Tank Battle 2D - Full Feature</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,38 +12,41 @@
 
         <div id="menuScreen">
             <h2>Chọn Chế Độ Chơi</h2>
-            <button class="mode-button" id="survivalBtn">Sinh Tồn</button>
-            <button class="mode-button" id="waveBtn">Phòng Thủ Đợt</button>
-            <button class="mode-button" id="timeAttackBtn">Tấn Công Thời Gian</button>
-            <button class="mode-button" id="bossBattleBtn">Đấu Trùm</button> <!-- Nút cho Boss Battle -->
+            <button class="mode-button" id="survivalBtn">🔥 Sinh Tồn</button>
+            <button class="mode-button" id="waveBtn">🌊 Phòng Thủ Đợt</button>
+            <button class="mode-button" id="timeAttackBtn">⏱️ Tấn Công Thời Gian</button>
+            <button class="mode-button" id="bossBattleBtn">💀 Đấu Trùm</button>
             <div id="highScoreDisplay">
-                <p>Điểm Cao Nhất (Sinh Tồn): <span id="survivalHighScore">0</span></p>
-                <p>Sóng Cao Nhất (Phòng Thủ): <span id="waveHighScore">0</span></p>
-                 <p>Điểm Cao Nhất (Tấn Công TG): <span id="timeAttackHighScore">0</span></p>
+                <h3>🏆 Bảng Vàng 🏆</h3>
+                <p>Sinh Tồn: <span id="survivalHighScore">0</span> điểm</p>
+                <p>Phòng Thủ: Sóng <span id="waveHighScore">0</span></p>
+                <p>Tấn Công TG: <span id="timeAttackHighScore">0</span> điểm</p>
+                <!-- Bạn có thể thêm hiển thị số lần thắng boss nếu muốn -->
             </div>
         </div>
 
-        <div id="gameArea" style="display: none;"> <!-- Ban đầu ẩn game area -->
-            <div class="game-container">
-                <canvas id="gameCanvas"></canvas>
-            </div>
+        <div id="gameArea" style="display: none;">
             <div class="status-bar">
                 <span id="gameModeDisplay">Chế độ: </span> |
                 <span id="scoreDisplay">Điểm: 0</span> |
-                <span id="waveDisplay" style="display:none;">Sóng: 0</span>
-                <span id="enemiesLeftDisplay" style="display:none;">Kẻ địch: 0</span>
-                <span id="timeDisplay" style="display:none;">Thời gian: 0.0s</span>
                 <span id="playerHealthDisplay">HP: 100</span>
+                <!-- Các thông tin chế độ chơi cụ thể sẽ được hiển thị/ẩn bằng JS -->
+                <span id="waveInfo" style="display:none;"> | Sóng: <span id="waveDisplay">0</span> | KĐ còn: <span id="enemiesLeftDisplay">0</span></span>
+                <span id="timeInfo" style="display:none;"> | Thời gian: <span id="timeDisplay">0.0s</span></span>
+                <span id="bossInfo" style="display:none;"> | Boss HP: <span id="bossHealthDisplay">N/A</span></span>
             </div>
-            <button id="backToMenuBtn" style="display:none; margin-top:10px;">Quay Lại Menu</button>
+            <div class="game-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            <button id="backToMenuBtn" class="ingame-button">Quay Lại Menu</button>
         </div>
 
          <div id="gameOverScreen" style="display: none;">
             <h2 id="gameOverTitle">GAME OVER</h2>
             <p>Điểm của bạn: <span id="finalScore">0</span></p>
             <p id="waveReached" style="display:none;">Đạt được sóng: <span id="finalWave">0</span></p>
-            <button id="restartBtn">Chơi Lại Chế Độ Này</button>
-            <button id="menuFromGameOverBtn">Về Menu Chính</button>
+            <button id="restartBtn" class="mode-button">Chơi Lại</button>
+            <button id="menuFromGameOverBtn" class.mode-button>Về Menu Chính</button>
         </div>
     </div>
     <script src="script.js"></script>
