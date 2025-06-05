@@ -6,10 +6,12 @@ body {
     background-color: #f0f0f0;
     margin: 0;
     padding-top: 20px;
+    overflow: hidden; /* Ngăn cuộn trang */
 }
 
 h1 {
     color: #333;
+    margin-bottom: 10px;
 }
 
 .game-container {
@@ -18,19 +20,21 @@ h1 {
 }
 
 #gameCanvas {
-    display: block; /* Loại bỏ khoảng trắng thừa bên dưới canvas */
-    background-color: #d3e0c3; /* Màu nền sân chơi */
+    display: block;
+    background-color: #d3e0c3;
+    touch-action: none; /* Rất quan trọng để joystick hoạt động tốt trên mobile */
 }
 
 .controls-info {
-    margin-top: 20px;
-    padding: 15px;
+    margin-top: 15px;
+    padding: 10px;
     background-color: #fff;
     border: 1px solid #ccc;
     border-radius: 5px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    font-size: 0.9em;
+    text-align: center;
 }
 
 .controls-info p {
-    margin: 5px 0;
+    margin: 3px 0;
 }
