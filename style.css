@@ -1,40 +1,131 @@
 body {
     font-family: Arial, sans-serif;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #f0f0f0;
+    justify-content: center; /* Căn giữa main-container */
+    align-items: flex-start; /* Căn main-container lên trên */
+    min-height: 100vh; /* Đảm bảo body chiếm toàn bộ chiều cao */
+    background-color: #e0e0e0; /* Màu nền nhẹ nhàng hơn */
     margin: 0;
     padding-top: 20px;
-    overflow: hidden; /* Ngăn cuộn trang */
+    overflow-y: auto; /* Cho phép cuộn nếu nội dung dài */
+    color: #333;
 }
 
+.main-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 900px; /* Giới hạn chiều rộng tối đa */
+    padding: 0 10px; /* Padding hai bên */
+    box-sizing: border-box;
+}
+
+
 h1 {
-    color: #333;
-    margin-bottom: 10px;
+    color: #2c3e50; /* Màu đậm hơn */
+    margin-bottom: 20px;
+    font-size: 2em;
+    text-shadow: 1px 1px 2px #aaa;
+}
+
+#menuScreen, #gameOverScreen {
+    background-color: #f9f9f9;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    text-align: center;
+    width: 100%;
+    max-width: 450px; /* Giới hạn chiều rộng menu */
+    margin-bottom: 20px;
+}
+
+#menuScreen h2, #gameOverScreen h2 {
+    color: #34495e;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.mode-button, #restartBtn, #menuFromGameOverBtn, #backToMenuBtn {
+    display: block; /* Mỗi nút một hàng */
+    width: 80%; /* Chiều rộng nút */
+    max-width: 280px; /* Giới hạn chiều rộng tối đa của nút */
+    padding: 12px 15px;
+    margin: 10px auto; /* Căn giữa và tạo khoảng cách */
+    background-color: #3498db; /* Màu xanh dương đẹp */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.mode-button:hover, #restartBtn:hover, #menuFromGameOverBtn:hover, #backToMenuBtn:hover {
+    background-color: #2980b9; /* Màu đậm hơn khi hover */
+}
+.mode-button:active, #restartBtn:active, #menuFromGameOverBtn:active, #backToMenuBtn:active {
+    transform: translateY(1px); /* Hiệu ứng nhấn nút */
+}
+
+
+#highScoreDisplay {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+#highScoreDisplay p {
+    margin: 8px 0;
+    font-size: 0.95em;
+    color: #555;
+}
+#highScoreDisplay span {
+    font-weight: bold;
+    color: #e67e22; /* Màu cam cho điểm cao */
+}
+
+
+#gameArea {
+    display: flex; /* Sắp xếp game-container và status-bar */
+    flex-direction: column;
+    align-items: center;
 }
 
 .game-container {
-    border: 2px solid #333;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    border: 3px solid #2c3e50; /* Viền đậm hơn */
+    box-shadow: 0 0 12px rgba(0,0,0,0.25);
+    display: inline-block; /* Để border ôm sát canvas */
+    margin-bottom: 10px; /* Khoảng cách với status bar */
 }
 
 #gameCanvas {
     display: block;
-    background-color: #d3e0c3;
-    touch-action: none; /* Rất quan trọng để joystick hoạt động tốt trên mobile */
+    background-color: #c8d6e5; /* Màu nền canvas mới */
+    touch-action: none;
 }
 
-.controls-info {
-    margin-top: 15px;
-    padding: 10px;
-    background-color: #fff;
-    border: 1px solid #ccc;
+.status-bar {
+    background-color: #34495e; /* Nền tối cho status bar */
+    color: #ecf0f1; /* Chữ sáng */
+    padding: 8px 15px;
     border-radius: 5px;
     font-size: 0.9em;
+    width: calc(100% - 30px); /* Chiều rộng bằng canvas */
+    max-width: 800px; /* Phù hợp với max width của canvas */
+    box-sizing: border-box;
     text-align: center;
+    margin-bottom: 10px;
+}
+.status-bar span {
+    margin: 0 8px;
 }
 
-.controls-info p {
-    margin: 3px 0;
+#gameOverScreen p {
+    font-size: 1.1em;
+    margin: 10px 0;
+}
+#gameOverScreen span {
+    font-weight: bold;
 }
