@@ -3,19 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tank Battle 2D - Refreshed</title>
+    <title>Tank Battle 2D - Advanced</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Tank Battle 2D</h1>
-    <div class="game-container">
-        <canvas id="gameCanvas"></canvas>
-    </div>
-    <div class="controls-info">
-        <p>Sử dụng joystick ảo trên màn hình để điều khiển.</p>
-        <p>Joystick trái: Di chuyển & Xoay thân.</p>
-        <p>Joystick phải: Xoay tháp pháo.</p>
-        <p>Nút tròn lớn: Bắn.</p>
+    <div class="main-container">
+        <h1>Tank Battle 2D</h1>
+
+        <div id="menuScreen">
+            <h2>Chọn Chế Độ Chơi</h2>
+            <button class="mode-button" id="survivalBtn">Sinh Tồn</button>
+            <button class="mode-button" id="waveBtn">Phòng Thủ Đợt</button>
+            <button class="mode-button" id="timeAttackBtn">Tấn Công Thời Gian</button>
+            <button class="mode-button" id="bossBattleBtn">Đấu Trùm</button> <!-- Nút cho Boss Battle -->
+            <div id="highScoreDisplay">
+                <p>Điểm Cao Nhất (Sinh Tồn): <span id="survivalHighScore">0</span></p>
+                <p>Sóng Cao Nhất (Phòng Thủ): <span id="waveHighScore">0</span></p>
+                 <p>Điểm Cao Nhất (Tấn Công TG): <span id="timeAttackHighScore">0</span></p>
+            </div>
+        </div>
+
+        <div id="gameArea" style="display: none;"> <!-- Ban đầu ẩn game area -->
+            <div class="game-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            <div class="status-bar">
+                <span id="gameModeDisplay">Chế độ: </span> |
+                <span id="scoreDisplay">Điểm: 0</span> |
+                <span id="waveDisplay" style="display:none;">Sóng: 0</span>
+                <span id="enemiesLeftDisplay" style="display:none;">Kẻ địch: 0</span>
+                <span id="timeDisplay" style="display:none;">Thời gian: 0.0s</span>
+                <span id="playerHealthDisplay">HP: 100</span>
+            </div>
+            <button id="backToMenuBtn" style="display:none; margin-top:10px;">Quay Lại Menu</button>
+        </div>
+
+         <div id="gameOverScreen" style="display: none;">
+            <h2 id="gameOverTitle">GAME OVER</h2>
+            <p>Điểm của bạn: <span id="finalScore">0</span></p>
+            <p id="waveReached" style="display:none;">Đạt được sóng: <span id="finalWave">0</span></p>
+            <button id="restartBtn">Chơi Lại Chế Độ Này</button>
+            <button id="menuFromGameOverBtn">Về Menu Chính</button>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>
