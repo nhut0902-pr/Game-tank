@@ -1,14 +1,15 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Font hiện đại hơn */
     display: flex;
-    justify-content: center; /* Căn giữa main-container */
-    align-items: flex-start; /* Căn main-container lên trên */
-    min-height: 100vh; /* Đảm bảo body chiếm toàn bộ chiều cao */
-    background-color: #e0e0e0; /* Màu nền nhẹ nhàng hơn */
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    background-color: #ECEFF1; /* Light Blue Grey */
     margin: 0;
-    padding-top: 20px;
-    overflow-y: auto; /* Cho phép cuộn nếu nội dung dài */
-    color: #333;
+    padding: 20px 10px; /* Padding chung */
+    overflow-y: auto;
+    color: #37474F; /* Darker Blue Grey for text */
+    box-sizing: border-box;
 }
 
 .main-container {
@@ -16,116 +17,184 @@ body {
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 900px; /* Giới hạn chiều rộng tối đa */
-    padding: 0 10px; /* Padding hai bên */
-    box-sizing: border-box;
+    max-width: 850px; /* Hơi rộng hơn một chút */
 }
 
-
 h1 {
-    color: #2c3e50; /* Màu đậm hơn */
-    margin-bottom: 20px;
-    font-size: 2em;
-    text-shadow: 1px 1px 2px #aaa;
+    color: #1A237E; /* Indigo Dark */
+    margin-bottom: 25px;
+    font-size: 2.2em;
+    font-weight: 700;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    letter-spacing: 1px;
 }
 
 #menuScreen, #gameOverScreen {
-    background-color: #f9f9f9;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    background-color: #FFFFFF; /* White */
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
     text-align: center;
     width: 100%;
-    max-width: 450px; /* Giới hạn chiều rộng menu */
-    margin-bottom: 20px;
+    max-width: 480px;
+    margin-bottom: 25px;
+    border: 1px solid #CFD8DC; /* Light border */
 }
 
 #menuScreen h2, #gameOverScreen h2 {
-    color: #34495e;
+    color: #3F51B5; /* Indigo */
     margin-top: 0;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    font-size: 1.6em;
+    font-weight: 600;
 }
 
-.mode-button, #restartBtn, #menuFromGameOverBtn, #backToMenuBtn {
-    display: block; /* Mỗi nút một hàng */
-    width: 80%; /* Chiều rộng nút */
-    max-width: 280px; /* Giới hạn chiều rộng tối đa của nút */
-    padding: 12px 15px;
-    margin: 10px auto; /* Căn giữa và tạo khoảng cách */
-    background-color: #3498db; /* Màu xanh dương đẹp */
+.mode-button, #restartBtn, #menuFromGameOverBtn, #backToMenuBtn.ingame-button {
+    display: block;
+    width: 90%;
+    max-width: 300px;
+    padding: 14px 20px;
+    margin: 12px auto;
+    background-image: linear-gradient(to right, #42A5F5, #1E88E5); /* Blue Gradient */
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 1em;
-    font-weight: bold;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    font-size: 1.05em;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.25s ease-in-out;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mode-button:hover, #restartBtn:hover, #menuFromGameOverBtn:hover, #backToMenuBtn.ingame-button:hover {
+    background-image: linear-gradient(to right, #1E88E5, #0D47A1); /* Darker Blue Gradient */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+.mode-button:active, #restartBtn:active, #menuFromGameOverBtn:active, #backToMenuBtn.ingame-button:active {
+    transform: translateY(0px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-.mode-button:hover, #restartBtn:hover, #menuFromGameOverBtn:hover, #backToMenuBtn:hover {
-    background-color: #2980b9; /* Màu đậm hơn khi hover */
-}
-.mode-button:active, #restartBtn:active, #menuFromGameOverBtn:active, #backToMenuBtn:active {
-    transform: translateY(1px); /* Hiệu ứng nhấn nút */
-}
-
-
 #highScoreDisplay {
-    margin-top: 25px;
-    padding-top: 15px;
-    border-top: 1px solid #ddd;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px dashed #B0BEC5; /* Dashed border */
+}
+#highScoreDisplay h3 {
+    color: #00796B; /* Teal Dark */
+    margin-bottom: 15px;
+    font-size: 1.3em;
 }
 #highScoreDisplay p {
-    margin: 8px 0;
-    font-size: 0.95em;
-    color: #555;
+    margin: 10px 0;
+    font-size: 1em;
+    color: #455A64; /* Blue Grey Darker */
 }
 #highScoreDisplay span {
     font-weight: bold;
-    color: #e67e22; /* Màu cam cho điểm cao */
+    color: #FF6F00; /* Amber Dark */
 }
 
-
 #gameArea {
-    display: flex; /* Sắp xếp game-container và status-bar */
+    display: none; /* Sẽ được JS đổi thành 'flex' */
     flex-direction: column;
     align-items: center;
+    width: 100%;
+}
+
+.status-bar {
+    background-color: #37474F; /* Darker Blue Grey */
+    color: #CFD8DC; /* Light Blue Grey text */
+    padding: 10px 15px;
+    border-radius: 8px 8px 0 0; /* Bo tròn góc trên */
+    font-size: 0.95em;
+    font-weight: 500;
+    width: 100%;
+    max-width: 800px; /* Phù hợp với max width của canvas */
+    box-sizing: border-box;
+    text-align: center;
+    border-bottom: 3px solid #FBC02D; /* Yellow Accent */
+    display: flex; /* Sắp xếp các span trên một hàng */
+    justify-content: space-around; /* Phân bố đều không gian */
+    flex-wrap: wrap; /* Cho phép xuống hàng nếu không đủ chỗ */
+}
+.status-bar span {
+    margin: 2px 5px; /* Khoảng cách nhỏ giữa các mục */
+    white-space: nowrap; /* Ngăn text xuống dòng giữa chừng */
 }
 
 .game-container {
-    border: 3px solid #2c3e50; /* Viền đậm hơn */
-    box-shadow: 0 0 12px rgba(0,0,0,0.25);
-    display: inline-block; /* Để border ôm sát canvas */
-    margin-bottom: 10px; /* Khoảng cách với status bar */
+    border: 4px solid #263238; /* Darkest Blue Grey border */
+    border-top: none; /* Bỏ viền trên vì đã có status-bar */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    display: inline-block;
+    line-height: 0; /* Loại bỏ khoảng trắng thừa dưới canvas */
 }
 
 #gameCanvas {
     display: block;
-    background-color: #c8d6e5; /* Màu nền canvas mới */
+    background-color: #B0BEC5; /* Blue Grey Light background for canvas */
     touch-action: none;
 }
 
-.status-bar {
-    background-color: #34495e; /* Nền tối cho status bar */
-    color: #ecf0f1; /* Chữ sáng */
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-size: 0.9em;
-    width: calc(100% - 30px); /* Chiều rộng bằng canvas */
-    max-width: 800px; /* Phù hợp với max width của canvas */
-    box-sizing: border-box;
-    text-align: center;
-    margin-bottom: 10px;
+#backToMenuBtn.ingame-button {
+    margin-top: 15px;
+    background-image: linear-gradient(to right, #78909C, #546E7A); /* Grey Gradient */
+    width: auto; /* Để nút co giãn theo nội dung */
+    padding: 10px 25px;
 }
-.status-bar span {
-    margin: 0 8px;
+#backToMenuBtn.ingame-button:hover {
+    background-image: linear-gradient(to right, #546E7A, #37474F);
 }
 
 #gameOverScreen p {
-    font-size: 1.1em;
-    margin: 10px 0;
+    font-size: 1.15em;
+    margin: 12px 0;
+    color: #424242; /* Dark Grey */
 }
-#gameOverScreen span {
-    font-weight: bold;
+#gameOverScreen #finalScore, #gameOverScreen #finalWave {
+    color: #D32F2F; /* Red Dark */
+    font-size: 1.2em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    h1 {
+        font-size: 1.8em;
+        margin-bottom: 15px;
+    }
+    .mode-button, #restartBtn, #menuFromGameOverBtn, #backToMenuBtn.ingame-button {
+        font-size: 0.95em;
+        padding: 12px 15px;
+    }
+    .status-bar {
+        font-size: 0.85em;
+        padding: 8px 10px;
+        flex-direction: column; /* Stack các mục status trên mobile */
+        align-items: center;
+    }
+    .status-bar span {
+        margin: 3px 0; /* Khoảng cách dọc khi stack */
+    }
+    #menuScreen, #gameOverScreen {
+        padding: 20px;
+    }
+    #highScoreDisplay h3 {
+        font-size: 1.1em;
+    }
+     #highScoreDisplay p {
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 400px) {
+    h1 {
+        font-size: 1.6em;
+    }
+    .mode-button, #restartBtn, #menuFromGameOverBtn, #backToMenuBtn.ingame-button {
+        font-size: 0.9em;
+        padding: 10px 12px;
+    }
 }
