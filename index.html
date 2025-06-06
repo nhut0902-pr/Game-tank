@@ -2,96 +2,96 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tank Battle 2D - Shop & Garage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Battle Advanced</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Cách tốt nhất: Dùng 'defer' để đảm bảo HTML tải xong trước khi chạy JS -->
+    <script src="script.js" defer></script>
 </head>
 <body>
-    <div class="main-container">
-        <h1>Tank Battle 2D</h1>
-
-        <div id="menuScreen">
-            <h2>Chọn Chế Độ Chơi</h2>
-            <button class="mode-button" id="survivalBtn">🔥 Sinh Tồn</button>
-            <button class="mode-button" id="waveBtn">🌊 Phòng Thủ Đợt</button>
-            <button class="mode-button" id="timeAttackBtn">⏱️ Tấn Công Thời Gian</button>
-            <button class="mode-button" id="bossBattleBtn">💀 Đấu Trùm</button>
-            <hr class="divider">
-            <button class="menu-extra-button" id="shopBtn">🛒 Cửa Hàng</button>
-            <button class="menu-extra-button" id="garageBtn">🛠️ Gara</button>
-            <div id="playerCurrencyDisplayMenu">Tiền: <span id="currencyMenu">0</span> G</div>
-            <div id="highScoreDisplay">
-                <!-- ... (như cũ) ... -->
-            </div>
+    <!-- 1. Màn hình Menu Chính -->
+    <div id="menuScreen" class="screen">
+        <h1>Tank Battle Advanced</h1>
+        <div class="menu-high-scores">
+            <p>Sinh Tồn: <span id="survivalHighScore">0</span></p>
+            <p>Phòng Thủ: <span id="waveHighScore">0</span></p>
+            <p>Tấn Công TG: <span id="timeAttackHighScore">0</span></p>
         </div>
-
-        <div id="shopScreen" style="display: none;">
-            <h2>Cửa Hàng Vật Phẩm</h2>
-            <div id="shopCurrencyDisplay">Tiền: <span id="currencyShop">0</span> G</div>
-            <div id="shopItemsContainer">
-                <!-- Vật phẩm sẽ được JS thêm vào đây -->
-            </div>
-            <button class="menu-extra-button" id="backToMenuFromShopBtn">Về Menu Chính</button>
+        <div class="menu-buttons">
+            <button id="survivalBtn" class="menu-btn">Chế Độ Sinh Tồn</button>
+            <button id="waveBtn" class="menu-btn">Chế Độ Phòng Thủ</button>
+            <button id="timeAttackBtn" class="menu-btn">Tấn Công Thời Gian</button>
+            <button id="bossBattleBtn" class="menu-btn">Đấu Trùm</button>
         </div>
-
-        <div id="garageScreen" style="display: none;">
-            <h2>Gara Nâng Cấp</h2>
-            <div id="garageCurrencyDisplay">Tiền: <span id="currencyGarage">0</span> G</div>
-            <div class="garage-sections-container">
-                <div class="garage-section">
-                    <h3>Thân Xe</h3>
-                    <div id="bodyItemsContainer" class="garage-items-grid">
-                        <!-- Thân xe sở hữu sẽ được JS thêm vào đây -->
-                    </div>
-                </div>
-                <div class="garage-section">
-                    <h3>Tháp Pháo</h3>
-                    <div id="turretItemsContainer" class="garage-items-grid">
-                        <!-- Tháp pháo sở hữu sẽ được JS thêm vào đây -->
-                    </div>
-                </div>
-                 <div class="garage-section">
-                    <h3>Màu Sơn</h3>
-                    <div id="paintItemsContainer" class="garage-items-grid">
-                        <!-- Màu sơn sở hữu sẽ được JS thêm vào đây -->
-                    </div>
-                </div>
-            </div>
-            <div id="currentTankPreview">
-                <p>Xe tăng hiện tại:</p>
-                <canvas id="garageTankCanvas" width="150" height="120"></canvas>
-            </div>
-            <button class="menu-extra-button" id="backToMenuFromGarageBtn">Về Menu Chính</button>
+        <div class="menu-secondary-buttons">
+            <button id="garageBtn" class="secondary-btn">Nhà Xe</button>
+            <button id="shopBtn" class="secondary-btn">Cửa Hàng</button>
         </div>
+        <p class="currency-display">Tiền: <span id="currencyMenu">0</span> G</p>
+    </div>
 
-
-        <div id="gameArea" style="display: none;">
-            <!-- ... (như cũ, nhưng status-bar có thể thêm hiển thị tiền) ... -->
-            <div class="status-bar">
-                <span id="gameModeDisplay">Chế độ: </span> |
-                <span id="scoreDisplay">Điểm: 0</span> |
-                <span id="playerCurrencyDisplayGame">Tiền: <span id="currencyGame">0</span> G</span> |
-                <span id="playerHealthDisplay">HP: 100</span>
-                <span id="waveInfo" style="display:none;"> | Sóng: <span id="waveDisplay">0</span> | KĐ còn: <span id="enemiesLeftDisplay">0</span></span>
-                <span id="timeInfo" style="display:none;"> | Thời gian: <span id="timeDisplay">0.0s</span></span>
-                <span id="bossInfo" style="display:none;"> | Boss HP: <span id="bossHealthDisplay">N/A</span></span>
-            </div>
-            <div class="game-container">
-                <canvas id="gameCanvas"></canvas>
-            </div>
-            <button id="backToMenuBtn" class="ingame-button">Quay Lại Menu</button>
+    <!-- 2. Khu vực Chơi Game -->
+    <div id="gameArea" class="screen" style="display: none;">
+        <div id="statusBar">
+            <span id="gameModeDisplay">Chế độ:</span>
+            <span id="scoreDisplay">Điểm: 0</span>
+            <span id="playerHealthDisplay">HP: 100/100</span>
+            <span id="waveInfo" style="display: none;">Wave: <span id="waveDisplay">1</span> | Còn Lại: <span id="enemiesLeftDisplay">0</span></span>
+            <span id="timeInfo" style="display: none;"><span id="timeDisplay">60.0s</span></span>
+            <span id="bossInfo" style="display: none;">Boss HP: <span id="bossHealthDisplay">500</span></span>
+            <span class="currency-display-game">Tiền: <span id="currencyGame">0</span> G</span>
+            <button id="backToMenuBtn">Về Menu</button>
         </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
 
-         <div id="gameOverScreen" style="display: none;">
-            <!-- ... (như cũ, có thể thêm hiển thị tiền kiếm được) ... -->
+    <!-- 3. Màn hình Game Over -->
+    <div id="gameOverScreen" class="screen overlay" style="display: none;">
+        <div class="popup">
             <h2 id="gameOverTitle">GAME OVER</h2>
-            <p>Điểm của bạn: <span id="finalScore">0</span></p>
+            <p>Điểm cuối cùng: <span id="finalScore">0</span></p>
+            <p id="waveReached" style="display: none;">Đạt đến Wave: <span id="finalWave">0</span></p>
             <p>Tiền kiếm được: <span id="moneyEarned">0</span> G</p>
-            <p id="waveReached" style="display:none;">Đạt được sóng: <span id="finalWave">0</span></p>
-            <button id="restartBtn" class="mode-button">Chơi Lại</button>
-            <button id="menuFromGameOverBtn" class.mode-button>Về Menu Chính</button>
+            <button id="restartBtn">Chơi Lại</button>
+            <button id="menuFromGameOverBtn">Về Menu</button>
         </div>
     </div>
-    <script src="script.js"></script>
+
+    <!-- 4. Màn hình Cửa Hàng (Shop) -->
+    <div id="shopScreen" class="screen" style="display: none;">
+        <h2>Cửa Hàng</h2>
+        <p class="currency-display">Tiền của bạn: <span id="currencyShop">0</span> G</p>
+        <div id="shopItemsContainer" class="items-container">
+            <!-- Vật phẩm sẽ được JS chèn vào đây -->
+        </div>
+        <button id="backToMenuFromShopBtn">Trở Về Menu</button>
+    </div>
+
+    <!-- 5. Màn hình Nhà Xe (Garage) -->
+    <div id="garageScreen" class="screen" style="display: none;">
+        <h2>Nhà Xe</h2>
+        <p class="currency-display">Tiền của bạn: <span id="currencyGarage">0</span> G</p>
+        <div class="garage-layout">
+            <div class="garage-preview">
+                <p>Xem trước xe tăng</p>
+                <canvas id="garageTankCanvas" width="200" height="150"></canvas>
+            </div>
+            <div class="garage-parts">
+                <div class="part-category">
+                    <h3>Thân Xe</h3>
+                    <div id="bodyItemsContainer" class="garage-items-grid"></div>
+                </div>
+                <div class="part-category">
+                    <h3>Tháp Pháo</h3>
+                    <div id="turretItemsContainer" class="garage-items-grid"></div>
+                </div>
+                <div class="part-category">
+                    <h3>Sơn</h3>
+                    <div id="paintItemsContainer" class="garage-items-grid"></div>
+                </div>
+            </div>
+        </div>
+        <button id="backToMenuFromGarageBtn">Trở Về Menu</button>
+    </div>
 </body>
 </html>
