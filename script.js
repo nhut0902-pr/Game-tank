@@ -1,3 +1,4 @@
+// script.js
 // --- DOM Elements ---
 const menuScreen = document.getElementById('menuScreen');
 const gameArea = document.getElementById('gameArea');
