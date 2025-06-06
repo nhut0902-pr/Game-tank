@@ -2,10 +2,10 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Tank Battle Advanced</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Cách tốt nhất: Dùng 'defer' để đảm bảo HTML tải xong trước khi chạy JS -->
+    <!-- 'defer' đảm bảo HTML được tải xong trước khi chạy JS. Đây là chìa khóa! -->
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -40,41 +40,45 @@
             <span id="timeInfo" style="display: none;"><span id="timeDisplay">60.0s</span></span>
             <span id="bossInfo" style="display: none;">Boss HP: <span id="bossHealthDisplay">500</span></span>
             <span class="currency-display-game">Tiền: <span id="currencyGame">0</span> G</span>
-            <button id="backToMenuBtn">Về Menu</button>
+            <button id="backToMenuBtn" class="ingame-btn">Về Menu</button>
         </div>
         <canvas id="gameCanvas"></canvas>
     </div>
 
-    <!-- 3. Màn hình Game Over -->
+    <!-- 3. Màn hình Game Over / Victory -->
     <div id="gameOverScreen" class="screen overlay" style="display: none;">
         <div class="popup">
             <h2 id="gameOverTitle">GAME OVER</h2>
             <p>Điểm cuối cùng: <span id="finalScore">0</span></p>
             <p id="waveReached" style="display: none;">Đạt đến Wave: <span id="finalWave">0</span></p>
             <p>Tiền kiếm được: <span id="moneyEarned">0</span> G</p>
-            <button id="restartBtn">Chơi Lại</button>
-            <button id="menuFromGameOverBtn">Về Menu</button>
+            <button id="restartBtn" class="popup-btn">Chơi Lại</button>
+            <button id="menuFromGameOverBtn" class="popup-btn">Về Menu</button>
         </div>
     </div>
 
     <!-- 4. Màn hình Cửa Hàng (Shop) -->
     <div id="shopScreen" class="screen" style="display: none;">
-        <h2>Cửa Hàng</h2>
-        <p class="currency-display">Tiền của bạn: <span id="currencyShop">0</span> G</p>
+        <div class="header-bar">
+            <h2>Cửa Hàng</h2>
+            <p class="currency-display">Tiền của bạn: <span id="currencyShop">0</span> G</p>
+        </div>
         <div id="shopItemsContainer" class="items-container">
             <!-- Vật phẩm sẽ được JS chèn vào đây -->
         </div>
-        <button id="backToMenuFromShopBtn">Trở Về Menu</button>
+        <button id="backToMenuFromShopBtn" class="back-btn">Trở Về Menu</button>
     </div>
 
     <!-- 5. Màn hình Nhà Xe (Garage) -->
     <div id="garageScreen" class="screen" style="display: none;">
-        <h2>Nhà Xe</h2>
-        <p class="currency-display">Tiền của bạn: <span id="currencyGarage">0</span> G</p>
+         <div class="header-bar">
+            <h2>Nhà Xe</h2>
+            <p class="currency-display">Tiền của bạn: <span id="currencyGarage">0</span> G</p>
+        </div>
         <div class="garage-layout">
             <div class="garage-preview">
-                <p>Xem trước xe tăng</p>
-                <canvas id="garageTankCanvas" width="200" height="150"></canvas>
+                <h3>Xem Trước Xe Tăng</h3>
+                <canvas id="garageTankCanvas" width="250" height="200"></canvas>
             </div>
             <div class="garage-parts">
                 <div class="part-category">
@@ -91,7 +95,7 @@
                 </div>
             </div>
         </div>
-        <button id="backToMenuFromGarageBtn">Trở Về Menu</button>
+        <button id="backToMenuFromGarageBtn" class="back-btn">Trở Về Menu</button>
     </div>
 </body>
 </html>
