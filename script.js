@@ -1,4 +1,4 @@
-// script.js (Phiên bản Hoàn Chỉnh Cuối Cùng - Đã Sửa Lỗi Nút Bắn)
+// script.js (Phiên bản Hoàn Chỉnh Cuối Cùng - Đã Sửa Lỗi Nút Bắn và Mọi Vấn Đề Khác)
 
 // --- DOM Elements ---
 const menuScreen = document.getElementById('menuScreen');
@@ -528,7 +528,7 @@ function startGame(mode) {
     else if (gameMode === 'boss_battle') { enemies = []; spawnEnemy(true); message = "BOSS BATTLE!"; }
     updateCurrencyDisplays(); if (gameLoopRequest) cancelAnimationFrame(gameLoopRequest);
     lastFrameTime = performance.now();
-    gameLoop(lastFrameTime);
+    gameLoopRequest = requestAnimationFrame(gameLoop);
 }
 function saveHighScore() { let highScoreKey, currentBest; switch (gameMode) { case 'survival': highScoreKey = HIGH_SCORE_KEYS.survival; currentBest = parseInt(localStorage.getItem(highScoreKey) || '0'); if (score > currentBest) localStorage.setItem(highScoreKey, score); break; case 'wave_defense': highScoreKey = HIGH_SCORE_KEYS.wave_defense; currentBest = parseInt(localStorage.getItem(highScoreKey) || '0'); if (currentWave > currentBest) localStorage.setItem(highScoreKey, currentWave); break; case 'time_attack': highScoreKey = HIGH_SCORE_KEYS.time_attack; currentBest = parseInt(localStorage.getItem(highScoreKey) || '0'); if (score > currentBest) localStorage.setItem(highScoreKey, score); break; } }
 function loadHighScores() { survivalHighScoreDisplay.textContent = localStorage.getItem(HIGH_SCORE_KEYS.survival) || '0'; waveHighScoreDisplay.textContent = localStorage.getItem(HIGH_SCORE_KEYS.wave_defense) || '0'; timeAttackHighScoreDisplay.textContent = localStorage.getItem(HIGH_SCORE_KEYS.time_attack) || '0'; }
