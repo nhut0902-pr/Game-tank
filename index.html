@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tank Battle 2D - Full Feature</title>
+    <title>Tank Battle 2D - Shop & Garage</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,21 +16,62 @@
             <button class="mode-button" id="waveBtn">🌊 Phòng Thủ Đợt</button>
             <button class="mode-button" id="timeAttackBtn">⏱️ Tấn Công Thời Gian</button>
             <button class="mode-button" id="bossBattleBtn">💀 Đấu Trùm</button>
+            <hr class="divider">
+            <button class="menu-extra-button" id="shopBtn">🛒 Cửa Hàng</button>
+            <button class="menu-extra-button" id="garageBtn">🛠️ Gara</button>
+            <div id="playerCurrencyDisplayMenu">Tiền: <span id="currencyMenu">0</span> G</div>
             <div id="highScoreDisplay">
-                <h3>🏆 Bảng Vàng 🏆</h3>
-                <p>Sinh Tồn: <span id="survivalHighScore">0</span> điểm</p>
-                <p>Phòng Thủ: Sóng <span id="waveHighScore">0</span></p>
-                <p>Tấn Công TG: <span id="timeAttackHighScore">0</span> điểm</p>
-                <!-- Bạn có thể thêm hiển thị số lần thắng boss nếu muốn -->
+                <!-- ... (như cũ) ... -->
             </div>
         </div>
 
+        <div id="shopScreen" style="display: none;">
+            <h2>Cửa Hàng Vật Phẩm</h2>
+            <div id="shopCurrencyDisplay">Tiền: <span id="currencyShop">0</span> G</div>
+            <div id="shopItemsContainer">
+                <!-- Vật phẩm sẽ được JS thêm vào đây -->
+            </div>
+            <button class="menu-extra-button" id="backToMenuFromShopBtn">Về Menu Chính</button>
+        </div>
+
+        <div id="garageScreen" style="display: none;">
+            <h2>Gara Nâng Cấp</h2>
+            <div id="garageCurrencyDisplay">Tiền: <span id="currencyGarage">0</span> G</div>
+            <div class="garage-sections-container">
+                <div class="garage-section">
+                    <h3>Thân Xe</h3>
+                    <div id="bodyItemsContainer" class="garage-items-grid">
+                        <!-- Thân xe sở hữu sẽ được JS thêm vào đây -->
+                    </div>
+                </div>
+                <div class="garage-section">
+                    <h3>Tháp Pháo</h3>
+                    <div id="turretItemsContainer" class="garage-items-grid">
+                        <!-- Tháp pháo sở hữu sẽ được JS thêm vào đây -->
+                    </div>
+                </div>
+                 <div class="garage-section">
+                    <h3>Màu Sơn</h3>
+                    <div id="paintItemsContainer" class="garage-items-grid">
+                        <!-- Màu sơn sở hữu sẽ được JS thêm vào đây -->
+                    </div>
+                </div>
+            </div>
+            <div id="currentTankPreview">
+                <p>Xe tăng hiện tại:</p>
+                <canvas id="garageTankCanvas" width="150" height="120"></canvas>
+            </div>
+            <button class="menu-extra-button" id="backToMenuFromGarageBtn">Về Menu Chính</button>
+        </div>
+
+
         <div id="gameArea" style="display: none;">
+            <!-- ... (như cũ, nhưng status-bar có thể thêm hiển thị tiền) ... -->
             <div class="status-bar">
                 <span id="gameModeDisplay">Chế độ: </span> |
                 <span id="scoreDisplay">Điểm: 0</span> |
+                <span id="playerCurrencyDisplayGame">Tiền: <span id="currencyGame">0</span> G</span> |
                 <span id="playerHealthDisplay">HP: 100</span>
-                <!-- Các thông tin chế độ chơi cụ thể sẽ được hiển thị/ẩn bằng JS -->
                 <span id="waveInfo" style="display:none;"> | Sóng: <span id="waveDisplay">0</span> | KĐ còn: <span id="enemiesLeftDisplay">0</span></span>
                 <span id="timeInfo" style="display:none;"> | Thời gian: <span id="timeDisplay">0.0s</span></span>
                 <span id="bossInfo" style="display:none;"> | Boss HP: <span id="bossHealthDisplay">N/A</span></span>
@@ -42,8 +83,10 @@
         </div>
 
          <div id="gameOverScreen" style="display: none;">
+            <!-- ... (như cũ, có thể thêm hiển thị tiền kiếm được) ... -->
             <h2 id="gameOverTitle">GAME OVER</h2>
             <p>Điểm của bạn: <span id="finalScore">0</span></p>
+            <p>Tiền kiếm được: <span id="moneyEarned">0</span> G</p>
             <p id="waveReached" style="display:none;">Đạt được sóng: <span id="finalWave">0</span></p>
             <button id="restartBtn" class="mode-button">Chơi Lại</button>
             <button id="menuFromGameOverBtn" class.mode-button>Về Menu Chính</button>
