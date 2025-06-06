@@ -1,4 +1,4 @@
-// script.js (Phiên bản Hoàn Chỉnh Cuối Cùng - Đã Sửa Mọi Lỗi)
+// script.js (Phiên bản Hoàn Chỉnh Cuối Cùng - Đã Sửa Lỗi Nút Bắn)
 
 // --- DOM Elements ---
 const menuScreen = document.getElementById('menuScreen');
@@ -458,7 +458,6 @@ function populateGarage() {
     bodyItemsContainer.innerHTML = ''; turretItemsContainer.innerHTML = ''; paintItemsContainer.innerHTML = '';
     ['bodies', 'turrets', 'paints'].forEach(category => {
         const container = category === 'bodies' ? bodyItemsContainer : (category === 'turrets' ? turretItemsContainer : paintItemsContainer);
-        const categoryKey = getInventoryCategoryKey(category.slice(0, -1)); // 'bodies' -> 'body'
         playerInventory[category].forEach(itemId => {
             const item = SHOP_ITEMS[itemId]; if (!item) return;
             const itemDiv = document.createElement('div');
@@ -585,7 +584,10 @@ function drawGame() {
     }
 }
 function gameLoop(timestamp) {
-    if (!gameActive) return;
+    if (!gameActive) {
+        gameLoopRequest = requestAnimationFrame(gameLoop);
+        return;
+    };
     const deltaTime = timestamp - lastFrameTime;
     update(deltaTime);
     drawGame();
@@ -629,13 +631,17 @@ function initEventListeners() {
 }
 function init() {
     console.log("Initializing game systems...");
-    const joystickBaseRadius = Math.min(canvas.width, canvas.height) * 0.09;
+    const joystickBaseRadius = Math.min(canvas.width, canvas.height) * 0.1;
     const joystickStickRadius = joystickBaseRadius * 0.6;
     const joystickOffsetY = canvas.height - joystickBaseRadius - 20;
     const joystickOffsetX = joystickBaseRadius + 25;
+    
     moveJoystick = new Joystick(joystickOffsetX, joystickOffsetY, joystickBaseRadius, joystickStickRadius);
     aimJoystick = new Joystick(canvas.width - joystickOffsetX, joystickOffsetY, joystickBaseRadius, joystickStickRadius);
-    fireButton = new FireButton(aimJoystick.x, aimJoystick.y - joystickBaseRadius - 40, joystickBaseRadius * 0.7);
+    
+    // === SỬA LỖI NÚT BẮN: Đặt nút bắn ở giữa, tách biệt khỏi các joystick ===
+    fireButton = new FireButton(canvas.width / 2, joystickOffsetY, joystickBaseRadius * 0.75);
+
     initEventListeners();
     loadPlayerData();
     showMenuScreen();
