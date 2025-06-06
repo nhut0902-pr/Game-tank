@@ -49,12 +49,12 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // --- Canvas & Game Constants ---
-canvas.width = Math.min(window.innerWidth * 0.9, 800);
-canvas.height = Math.min(window.innerHeight * 0.7, 600);
+canvas.width = Math.min(window.innerWidth * 0.9, 1000);
+canvas.height = Math.min(window.innerHeight * 0.8, 600);
 const TANK_WIDTH = 40; const TANK_HEIGHT = 30;
 const TURRET_RADIUS = 8; const BARREL_LENGTH = 25; const BARREL_WIDTH = 6;
 const BULLET_RADIUS = 4; const BULLET_SPEED_BASE = 7;
-const TANK_SPEED = 1.5; const TANK_ROTATION_SPEED = 0.035; const TURRET_ROTATION_SPEED = 0.05;
+const TANK_SPEED = 1.5; const TANK_ROTATION_SPEED = 0.035;
 const PLAYER_BASE_SHOOT_COOLDOWN = 450;
 const MAX_PLAYER_HEALTH_BASE = 100;
 const PLAYER_BASE_BULLET_DAMAGE = 20;
@@ -78,8 +78,8 @@ const HIGH_SCORE_KEYS = { survival: 'tank_hs_survival', wave_defense: 'tank_hs_w
 let playerTank; let bullets = []; let enemies = []; let obstacles = []; let powerUps = [];
 let moveJoystick, aimJoystick, fireButton;
 let gameLoopRequest; let score = 0; let gameMode = 'survival'; let gameActive = false;
-let lastEnemySpawnTime = 0; let currentWave = 0; let enemiesThisWave = 0;
-let timeRemaining = TIME_ATTACK_DURATION; let lastTickTime = Date.now();
+let lastFrameTime = 0; let lastEnemySpawnTime = 0; let currentWave = 0; let enemiesThisWave = 0;
+let timeRemaining = TIME_ATTACK_DURATION;
 let message = ""; let messageTimer = 0;
 let currentSelectedMode = 'survival';
 let audioCtx;
@@ -195,7 +195,7 @@ class Tank {
         this.health = this.maxHealth;
         this.bodyAngle = isPlayer ? -Math.PI / 2 : Math.random() * Math.PI * 2;
         this.turretAngle = this.bodyAngle;
-        this.lastShotTime = 0; this.lastRegenTime = Date.now();
+        this.lastShotTime = 0;
         this.hasShield = false; this.isSpreadShotActive = false;
 
         if (!isPlayer) this.setupAI();
@@ -309,14 +309,14 @@ class Tank {
         targetCtx.fillStyle = 'lime'; targetCtx.fillRect(healthBarX, healthBarY, Math.max(0, currentHealthW), HEALTH_BAR_HEIGHT);
     }
     update(moveInput, aimInput, playerTankRef, obstaclesRef, deltaTime) {
-        if (this.health <= 0) return;
+        if (this.health <= 0 || !deltaTime) return;
         if (this.isPlayer && this.healthRegen > 0 && this.health < this.maxHealth) {
             this.health += this.healthRegen * (deltaTime / 1000);
             if (this.health > this.maxHealth) this.health = this.maxHealth;
         }
         let prevX = this.x; let prevY = this.y;
         if (this.isPlayer) { if (Math.abs(moveInput.y) > 0.1) { const moveSpeed = -moveInput.y * this.speed; this.x += moveSpeed * Math.cos(this.bodyAngle); this.y += moveSpeed * Math.sin(this.bodyAngle); } if (Math.abs(moveInput.x) > 0.1) { this.bodyAngle += moveInput.x * TANK_ROTATION_SPEED * Math.sign(-moveInput.y || 1); } if (Math.abs(aimInput.x) > 0.1 || Math.abs(aimInput.y) > 0.1) { this.turretAngle = Math.atan2(aimInput.y, aimInput.x); } }
-        else { this.aiMoveTimer -= deltaTime; const distanceToPlayer = playerTankRef && playerTankRef.health > 0 ? getDistance(this.x, this.y, playerTankRef.x, playerTankRef.y) : Infinity; if (distanceToPlayer < this.aiSightRange && playerTankRef.health > 0) { this.aiState = this.isBoss ? 'boss_attacking' : 'attacking'; this.aiWanderTarget = null; } else if (this.aiState !== 'returning_to_patrol') { this.aiState = 'patrolling'; } if (this.aiPathBlockedTimer > 0) this.aiPathBlockedTimer -= deltaTime; let targetAngleForMovement = this.bodyAngle; let tryToMove = false; if (this.aiState === 'patrolling' || this.aiState === 'returning_to_patrol') { if (!this.aiWanderTarget || this.aiMoveTimer <= 0 || getDistance(this.x, this.y, this.aiWanderTarget.x, this.aiWanderTarget.y) < this.width) { if (this.aiState === 'returning_to_patrol') this.aiState = 'patrolling'; this.aiWanderTarget = { x: Math.random() * (canvas.width - this.width*2) + this.width, y: Math.random() * (canvas.height - this.height*2) + this.height }; this.aiMoveTimer = 3000 + Math.random() * 4000; } targetAngleForMovement = Math.atan2(this.aiWanderTarget.y - this.y, this.aiWanderTarget.x - this.x); this.turretAngle = this.bodyAngle; tryToMove = true; } else if (this.aiState === 'attacking' || this.aiState === 'boss_attacking') { targetAngleForMovement = Math.atan2(playerTankRef.y - this.y, playerTankRef.x - this.x); this.turretAngle = targetAngleForMovement; tryToMove = true; if (this.enemyType === 'scout') { if (distanceToPlayer < this.aiSightRange * 0.4) targetAngleForMovement += Math.PI; else if (distanceToPlayer < this.aiSightRange * 0.8) targetAngleForMovement += (Math.random() > 0.5 ? Math.PI/2.5 : -Math.PI/2.5) ; } else if (this.enemyType === 'heavy' || this.isBoss) { if (distanceToPlayer < this.aiSightRange * 0.25) tryToMove = false; } const currentTime = Date.now(); if (currentTime - this.aiLastShotTime > this.aiShootCooldown) { this.shoot(); this.aiLastShotTime = currentTime; } if (this.isBoss && currentTime - this.aiLastSpecialAttackTime > BOSS_SHOOT_COOLDOWN_SPECIAL) { this.bossSpecialAttack(); this.aiLastSpecialAttackTime = currentTime; } } if (this.aiPathBlockedTimer <=0 && tryToMove) { let angleDiffBody = targetAngleForMovement - this.bodyAngle; while (angleDiffBody > Math.PI) angleDiffBody -= Math.PI * 2; while (angleDiffBody < -Math.PI) angleDiffBody += Math.PI * 2; if (Math.abs(angleDiffBody) > TANK_ROTATION_SPEED * 0.8) { this.bodyAngle += Math.sign(angleDiffBody) * TANK_ROTATION_SPEED * 0.8; } else { this.bodyAngle = targetAngleForMovement; } if (Math.abs(angleDiffBody) < Math.PI / 1.7 || this.aiState.includes('attacking')) { this.x += this.speed * Math.cos(this.bodyAngle); this.y += this.speed * Math.sin(this.bodyAngle); } } }
+        else { this.aiMoveTimer -= deltaTime; const distanceToPlayer = playerTankRef && playerTankRef.health > 0 ? getDistance(this.x, this.y, playerTankRef.x, playerTankRef.y) : Infinity; if (distanceToPlayer < this.aiSightRange && playerTankRef.health > 0) { this.aiState = this.isBoss ? 'boss_attacking' : 'attacking'; this.aiWanderTarget = null; } else if (this.aiState !== 'returning_to_patrol') { this.aiState = 'patrolling'; } if (this.aiPathBlockedTimer > 0) this.aiPathBlockedTimer -= deltaTime; let targetAngleForMovement = this.bodyAngle; let tryToMove = false; if (this.aiState === 'patrolling' || this.aiState === 'returning_to_patrol') { if (!this.aiWanderTarget || this.aiMoveTimer <= 0 || getDistance(this.x, this.y, this.aiWanderTarget.x, this.aiWanderTarget.y) < this.width) { if (this.aiState === 'returning_to_patrol') this.aiState = 'patrolling'; this.aiWanderTarget = { x: Math.random() * (canvas.width - this.width*2) + this.width, y: Math.random() * (canvas.height - this.height*2) + this.height }; this.aiMoveTimer = 3000 + Math.random() * 4000; } targetAngleForMovement = Math.atan2(this.aiWanderTarget.y - this.y, this.aiWanderTarget.x - this.x); this.turretAngle = this.bodyAngle; tryToMove = true; } else if (this.aiState === 'attacking' || this.aiState === 'boss_attacking') { targetAngleForMovement = Math.atan2(playerTankRef.y - this.y, playerTankRef.x - this.x); this.turretAngle = targetAngleForMovement; tryToMove = true; if (this.enemyType === 'scout') { if (distanceToPlayer < this.aiSightRange * 0.4) targetAngleForMovement += Math.PI; else if (distanceToPlayer < this.aiSightRange * 0.8) targetAngleForMovement += (Math.random() > 0.5 ? Math.PI/2.5 : -Math.PI/2.5) ; } else if (this.enemyType === 'heavy' || this.isBoss) { if (distanceToPlayer < this.aiSightRange * 0.25) tryToMove = false; } const currentTime = Date.now(); if (currentTime - this.lastShotTime > this.aiShootCooldown) { this.shoot(); this.lastShotTime = currentTime; } if (this.isBoss && currentTime - this.aiLastSpecialAttackTime > BOSS_SHOOT_COOLDOWN_SPECIAL) { this.bossSpecialAttack(); this.aiLastSpecialAttackTime = currentTime; } } if (this.aiPathBlockedTimer <=0 && tryToMove) { let angleDiffBody = targetAngleForMovement - this.bodyAngle; while (angleDiffBody > Math.PI) angleDiffBody -= Math.PI * 2; while (angleDiffBody < -Math.PI) angleDiffBody += Math.PI * 2; if (Math.abs(angleDiffBody) > TANK_ROTATION_SPEED * 0.8) { this.bodyAngle += Math.sign(angleDiffBody) * TANK_ROTATION_SPEED * 0.8; } else { this.bodyAngle = targetAngleForMovement; } if (Math.abs(angleDiffBody) < Math.PI / 1.7 || this.aiState.includes('attacking')) { this.x += this.speed * Math.cos(this.bodyAngle); this.y += this.speed * Math.sin(this.bodyAngle); } } }
         obstaclesRef.forEach(obs => { if (checkTankObstacleCollision(this, obs)) { this.x = prevX; this.y = prevY; if (!this.isPlayer && this.aiPathBlockedTimer <=0) { this.bodyAngle += Math.PI / 1.5 * (Math.random() > 0.5 ? 1: -1) ; this.aiWanderTarget = null; this.aiMoveTimer = 250; this.aiPathBlockedTimer = 500; if (this.aiState === 'attacking') this.aiState = 'returning_to_patrol'; } if (this.isPlayer) { this.bodyAngle += 0.06 * (Math.random() > 0.5 ? 1 : -1); } } });
         this.x = Math.max(this.width / 2, Math.min(canvas.width - this.width / 2, this.x)); this.y = Math.max(this.height / 2, Math.min(canvas.height - this.height / 2, this.y));
     }
@@ -458,6 +458,7 @@ function populateGarage() {
     bodyItemsContainer.innerHTML = ''; turretItemsContainer.innerHTML = ''; paintItemsContainer.innerHTML = '';
     ['bodies', 'turrets', 'paints'].forEach(category => {
         const container = category === 'bodies' ? bodyItemsContainer : (category === 'turrets' ? turretItemsContainer : paintItemsContainer);
+        const categoryKey = getInventoryCategoryKey(category.slice(0, -1)); // 'bodies' -> 'body'
         playerInventory[category].forEach(itemId => {
             const item = SHOP_ITEMS[itemId]; if (!item) return;
             const itemDiv = document.createElement('div');
@@ -477,8 +478,8 @@ function populateGarage() {
 }
 function equipItem(itemType, itemId) { playerEquipment[itemType] = itemId; playSound('ui_click', 0.3); savePlayerData(); populateGarage(); }
 function drawGarageTankPreview() { ctxGarage.clearRect(0, 0, garageTankCanvas.width, garageTankCanvas.height); const previewTank = new Tank(garageTankCanvas.width / 2, garageTankCanvas.height / 2, true); previewTank.draw(ctxGarage); }
-function showShopScreen() { menuScreen.style.display = 'none'; shopScreen.style.display = 'block'; populateShop(); updateCurrencyDisplays(); }
-function showGarageScreen() { menuScreen.style.display = 'none'; garageScreen.style.display = 'block'; populateGarage(); updateCurrencyDisplays(); }
+function showShopScreen() { playSound('ui_click'); menuScreen.style.display = 'none'; shopScreen.style.display = 'block'; populateShop(); updateCurrencyDisplays(); }
+function showGarageScreen() { playSound('ui_click'); menuScreen.style.display = 'none'; garageScreen.style.display = 'block'; populateGarage(); updateCurrencyDisplays(); }
 function spawnEnemy(isBossOverride = false) {
     let spawnX, spawnY;
     const isBossModeActive = (gameMode === "boss_battle" && enemies.filter(e => e.isBoss).length === 0);
@@ -520,14 +521,15 @@ function startGame(mode) {
     playerTank = new Tank(canvas.width / 2, canvas.height * 0.85, true);
     bullets = []; enemies = []; powerUps = [];
     Object.keys(activePowerUps).forEach(key => activePowerUps[key] = { active: false, endTime: 0 });
-    score = 0; gameActive = true; lastEnemySpawnTime = Date.now(); currentWave = 0;
-    timeRemaining = TIME_ATTACK_DURATION; lastTickTime = Date.now(); message = `Chế độ: ${gameMode.replace(/_/g, ' ').toUpperCase()}`; messageTimer = MESSAGE_DURATION;
+    score = 0; gameActive = true; lastEnemySpawnTime = 0; currentWave = 0;
+    timeRemaining = TIME_ATTACK_DURATION; message = `Chế độ: ${gameMode.replace(/_/g, ' ').toUpperCase()}`; messageTimer = MESSAGE_DURATION;
     createObstacles();
     if (gameMode === 'wave_defense') startNewWave();
     else if (gameMode === 'survival') for (let i = 0; i < 2; i++) spawnEnemy();
     else if (gameMode === 'boss_battle') { enemies = []; spawnEnemy(true); message = "BOSS BATTLE!"; }
     updateCurrencyDisplays(); if (gameLoopRequest) cancelAnimationFrame(gameLoopRequest);
-    gameLoop();
+    lastFrameTime = performance.now();
+    gameLoop(lastFrameTime);
 }
 function saveHighScore() { let highScoreKey, currentBest; switch (gameMode) { case 'survival': highScoreKey = HIGH_SCORE_KEYS.survival; currentBest = parseInt(localStorage.getItem(highScoreKey) || '0'); if (score > currentBest) localStorage.setItem(highScoreKey, score); break; case 'wave_defense': highScoreKey = HIGH_SCORE_KEYS.wave_defense; currentBest = parseInt(localStorage.getItem(highScoreKey) || '0'); if (currentWave > currentBest) localStorage.setItem(highScoreKey, currentWave); break; case 'time_attack': highScoreKey = HIGH_SCORE_KEYS.time_attack; currentBest = parseInt(localStorage.getItem(highScoreKey) || '0'); if (score > currentBest) localStorage.setItem(highScoreKey, score); break; } }
 function loadHighScores() { survivalHighScoreDisplay.textContent = localStorage.getItem(HIGH_SCORE_KEYS.survival) || '0'; waveHighScoreDisplay.textContent = localStorage.getItem(HIGH_SCORE_KEYS.wave_defense) || '0'; timeAttackHighScoreDisplay.textContent = localStorage.getItem(HIGH_SCORE_KEYS.time_attack) || '0'; }
@@ -537,7 +539,7 @@ function getTouchPos(canvasDom, touchEvent) { const rect = canvasDom.getBounding
 let isMouseDown = false;
 function handleMouseDown(event) { if (!gameActive && gameOverScreen.style.display === 'none') return; isMouseDown = true; const pos = getTouchPos(canvas, event); if (moveJoystick.handleDown(pos.x, pos.y, 'mouse')) return; if (aimJoystick.handleDown(pos.x, pos.y, 'mouse')) return; if (fireButton.handleDown(pos.x, pos.y, 'mouse')) return; }
 function handleMouseMove(event) { if (!isMouseDown || !gameActive) return; const pos = getTouchPos(canvas, event); moveJoystick.handleMove(pos.x, pos.y, 'mouse'); aimJoystick.handleMove(pos.x, pos.y, 'mouse'); }
-function handleMouseUp(event) { if (!isMouseDown) return; isMouseDown = false; moveJoystick.handleUp('mouse'); aimJoystick.handleUp('mouse'); fireButton.handleUp('mouse'); }
+function handleMouseUp() { if (!isMouseDown) return; isMouseDown = false; moveJoystick.handleUp('mouse'); aimJoystick.handleUp('mouse'); fireButton.handleUp('mouse'); }
 function handleTouchStart(event) { if (!gameActive && gameOverScreen.style.display === 'none') return; initAudio(); event.preventDefault(); const touches = event.changedTouches; const rect = canvas.getBoundingClientRect(); for (let i = 0; i < touches.length; i++) { const touch = touches[i]; const x = touch.clientX - rect.left; const y = touch.clientY - rect.top; if (moveJoystick.handleDown(x, y, touch.identifier)) continue; if (aimJoystick.handleDown(x, y, touch.identifier)) continue; if (fireButton.handleDown(x, y, touch.identifier)) continue; } }
 function handleTouchMove(event) { if (!gameActive) return; event.preventDefault(); const touches = event.changedTouches; const rect = canvas.getBoundingClientRect(); for (let i = 0; i < touches.length; i++) { const touch = touches[i]; const x = touch.clientX - rect.left; const y = touch.clientY - rect.top; moveJoystick.handleMove(x, y, touch.identifier); aimJoystick.handleMove(x, y, touch.identifier); } }
 function handleTouchEnd(event) { event.preventDefault(); const touches = event.changedTouches; for (let i = 0; i < touches.length; i++) { const touch = touches[i]; moveJoystick.handleUp(touch.identifier); aimJoystick.handleUp(touch.identifier); fireButton.handleUp(touch.identifier); } }
@@ -584,11 +586,11 @@ function drawGame() {
 }
 function gameLoop(timestamp) {
     if (!gameActive) return;
-    const deltaTime = timestamp - lastTickTime;
+    const deltaTime = timestamp - lastFrameTime;
     update(deltaTime);
     drawGame();
     updateHTMLUI();
-    lastTickTime = timestamp;
+    lastFrameTime = timestamp;
     gameLoopRequest = requestAnimationFrame(gameLoop);
 }
 function updateHTMLUI() {
@@ -626,18 +628,19 @@ function initEventListeners() {
     canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 }
 function init() {
-    console.log("Document loaded, initializing game systems...");
+    console.log("Initializing game systems...");
     const joystickBaseRadius = Math.min(canvas.width, canvas.height) * 0.09;
     const joystickStickRadius = joystickBaseRadius * 0.6;
-    const joystickOffsetY = canvas.height - joystickBaseRadius - 15;
-    const joystickOffsetX = joystickBaseRadius + 20;
+    const joystickOffsetY = canvas.height - joystickBaseRadius - 20;
+    const joystickOffsetX = joystickBaseRadius + 25;
     moveJoystick = new Joystick(joystickOffsetX, joystickOffsetY, joystickBaseRadius, joystickStickRadius);
     aimJoystick = new Joystick(canvas.width - joystickOffsetX, joystickOffsetY, joystickBaseRadius, joystickStickRadius);
-    fireButton = new FireButton(aimJoystick.x, aimJoystick.y - joystickBaseRadius - 35, joystickBaseRadius * 0.7);
+    fireButton = new FireButton(aimJoystick.x, aimJoystick.y - joystickBaseRadius - 40, joystickBaseRadius * 0.7);
     initEventListeners();
     loadPlayerData();
     showMenuScreen();
-    console.log("Game systems initialized. Waiting for mode selection.");
+    console.log("Game systems initialized. Waiting for user input.");
 }
 
-window.onload = init;
+// Start the entire process
+init();
