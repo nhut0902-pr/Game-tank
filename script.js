@@ -1,4 +1,4 @@
-// script.js (3D Optimized Mobile Version)
+// script.js (3D Optimized Mobile Version - Robust & Performance Edition)
 
 let scene, camera, renderer, clock;
 let playerTank;
@@ -23,6 +23,8 @@ const playerHealthDisplay = document.getElementById('playerHealthDisplay');
 const scoreDisplay = document.getElementById('scoreDisplay');
 
 function initThreeJS() {
+    if (renderer) return;
+
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
     scene.fog = new THREE.Fog(0x87ceeb, 200, 600);
@@ -33,8 +35,10 @@ function initThreeJS() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
 
-    const old = gameArea.querySelector('canvas:not(#gameCanvas)');
-    if (old) gameArea.removeChild(old);
+    renderer.domElement.style.position = 'absolute';
+    renderer.domElement.style.top = '0';
+    renderer.domElement.style.left = '0';
+    renderer.domElement.style.zIndex = '1';
     gameArea.appendChild(renderer.domElement);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.9));
@@ -51,11 +55,6 @@ function initThreeJS() {
     floor.receiveShadow = true;
     scene.add(floor);
 
-    const grid = new THREE.GridHelper(WORLD_SIZE, 60, 0x000000, 0x000000);
-    grid.material.opacity = 0.1;
-    grid.material.transparent = true;
-    scene.add(grid);
-
     clock = new THREE.Clock();
 }
 
@@ -68,28 +67,27 @@ class Tank {
         const bodyMat = new THREE.MeshStandardMaterial({ color: color });
         const detailMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
 
-        // Slightly bigger for better visibility
         const body = new THREE.Mesh(new THREE.BoxGeometry(6, 2.5, 8), bodyMat);
-        body.position.y = 1.5;
+        body.position.y = 1.25;
         body.castShadow = true;
         this.group.add(body);
 
         const trackL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 8.5), detailMat);
-        trackL.position.set(-3.2, 0.75, 0);
+        trackL.position.set(-3, 0.75, 0);
         this.group.add(trackL);
         const trackR = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 8.5), detailMat);
-        trackR.position.set(3.2, 0.75, 0);
+        trackR.position.set(3, 0.75, 0);
         this.group.add(trackR);
 
         this.turretGroup = new THREE.Group();
-        this.turretGroup.position.y = 3.2;
-        const head = new THREE.Mesh(new THREE.BoxGeometry(4, 1.8, 4.5), bodyMat);
+        this.turretGroup.position.y = 2.5;
+        const head = new THREE.Mesh(new THREE.BoxGeometry(4, 1.5, 4), bodyMat);
         head.castShadow = true;
         this.turretGroup.add(head);
 
-        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 6.5), detailMat);
+        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 6), detailMat);
         barrel.rotation.x = Math.PI / 2;
-        barrel.position.z = 4.5;
+        barrel.position.z = 4;
         this.turretGroup.add(barrel);
 
         this.group.add(this.turretGroup);
@@ -97,6 +95,7 @@ class Tank {
 
         this.health = 100;
         this.lastShotTime = 0;
+        this.toRemove = false;
     }
 
     update(dt, moveInput) {
@@ -109,7 +108,7 @@ class Tank {
         } else {
             const dist = this.group.position.distanceTo(playerTank.group.position);
             this.group.lookAt(playerTank.group.position.x, 0, playerTank.group.position.z);
-            if (dist > 45) this.group.translateZ(TANK_SPEED * 0.4 * dt);
+            if (dist > 40) this.group.translateZ(TANK_SPEED * 0.4 * dt);
             if (Date.now() - this.lastShotTime > 2500 && dist < 200) {
                 this.shoot();
                 this.lastShotTime = Date.now();
@@ -121,7 +120,7 @@ class Tank {
     }
 
     shoot() {
-        const tip = new THREE.Vector3(0, 0, 8.5).applyMatrix4(this.turretGroup.matrixWorld);
+        const tip = new THREE.Vector3(0, 0, 7.5).applyMatrix4(this.turretGroup.matrixWorld);
         const quat = new THREE.Quaternion();
         this.turretGroup.getWorldQuaternion(quat);
         const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(quat);
@@ -132,9 +131,13 @@ class Tank {
         this.health -= dmg;
         if (this.health <= 0) {
             this.health = 0;
-            scene.remove(this.group);
-            if (this.isPlayer) gameActive = false;
-            else { score += 10; enemies = enemies.filter(e => e !== this); }
+            this.toRemove = true;
+            if (this.isPlayer) {
+                gameActive = false;
+                showGameOverScreen();
+            } else {
+                score += 10;
+            }
         }
     }
 }
@@ -143,21 +146,28 @@ class Bullet {
     constructor(pos, dir, isPlayer) {
         this.isPlayer = isPlayer;
         this.dir = dir.normalize();
-        this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.7), new THREE.MeshBasicMaterial({ color: isPlayer?0xffff00:0xff3300 }));
+        this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.6), new THREE.MeshBasicMaterial({ color: isPlayer?0xffff00:0xff3300 }));
         this.mesh.position.copy(pos);
         scene.add(this.mesh);
         this.time = Date.now();
+        this.toRemove = false;
     }
     update(dt) {
         this.mesh.position.add(this.dir.clone().multiplyScalar(BULLET_SPEED * dt));
         if (this.isPlayer) {
-            enemies.forEach(e => { if (this.mesh.position.distanceTo(e.group.position) < 7) { e.takeDamage(34); this.destroy(); }});
-        } else if (playerTank && this.mesh.position.distanceTo(playerTank.group.position) < 6) {
-            playerTank.takeDamage(15); this.destroy();
+            for(let e of enemies) {
+                if (this.mesh.position.distanceTo(e.group.position) < 6) {
+                    e.takeDamage(34);
+                    this.toRemove = true;
+                    break;
+                }
+            }
+        } else if (playerTank && this.mesh.position.distanceTo(playerTank.group.position) < 5) {
+            playerTank.takeDamage(15);
+            this.toRemove = true;
         }
-        if (Date.now() - this.time > 2500) this.destroy();
+        if (Date.now() - this.time > 2000) this.toRemove = true;
     }
-    destroy() { scene.remove(this.mesh); bullets = bullets.filter(b => b !== this); }
 }
 
 class Joystick {
@@ -196,55 +206,81 @@ class FireBtn {
 }
 
 function loop() {
-    if (!gameActive) {
-        if (playerTank && playerTank.health <= 0) {
+    requestAnimationFrame(loop);
+    if (!renderer) return;
+
+    if (gameActive && playerTank) {
+        try {
+            const dt = Math.min(clock.getDelta(), 0.1);
+            if (keys['KeyW']) moveJoystick.vy = -1; else if (keys['KeyS']) moveJoystick.vy = 1; else if (!moveJoystick.active) moveJoystick.vy = 0;
+            if (keys['KeyA']) moveJoystick.vx = -1; else if (keys['KeyD']) moveJoystick.vx = 1; else if (!moveJoystick.active) moveJoystick.vx = 0;
+            if (keys['Space']) fireButton.active = true;
+
+            playerTank.update(dt, moveJoystick);
+            if (fireButton.active && Date.now() - playerTank.lastShotTime > 450) { playerTank.shoot(); playerTank.lastShotTime = Date.now(); }
+
+            for(let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].update(dt);
+                if (enemies[i].toRemove) {
+                    scene.remove(enemies[i].group);
+                    enemies.splice(i, 1);
+                }
+            }
+
+            for(let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].update(dt);
+                if (bullets[i].toRemove) {
+                    scene.remove(bullets[i].mesh);
+                    bullets.splice(i, 1);
+                }
+            }
+
+            const off = new THREE.Vector3(0, 0, cameraDistance).applyEuler(new THREE.Euler(-cameraPitch, cameraYaw, 0));
+            camera.position.copy(playerTank.group.position).add(off);
+            camera.position.y += 15;
+            camera.lookAt(playerTank.group.position.x, 5, playerTank.group.position.z);
+
             renderer.render(scene, camera);
             uiCtx.clearRect(0,0,uiCanvas.width,uiCanvas.height);
-            gameOverScreen.style.display = 'block';
-            document.getElementById('finalScore').textContent = score;
+            moveJoystick.draw(uiCtx);
+            fireButton.draw(uiCtx);
+            playerHealthDisplay.textContent = "HP: " + Math.max(0, Math.ceil(playerTank.health)) + "/100";
+            scoreDisplay.textContent = "Điểm: " + score;
+        } catch (e) {
+            console.error(e);
         }
-        return requestAnimationFrame(loop);
+    } else if (playerTank && playerTank.health <= 0) {
+        renderer.render(scene, camera);
+        uiCtx.clearRect(0,0,uiCanvas.width,uiCanvas.height);
     }
-    const dt = clock.getDelta();
-    if (keys['KeyW']) moveJoystick.vy = -1; else if (keys['KeyS']) moveJoystick.vy = 1; else if (!moveJoystick.active) moveJoystick.vy = 0;
-    if (keys['KeyA']) moveJoystick.vx = -1; else if (keys['KeyD']) moveJoystick.vx = 1; else if (!moveJoystick.active) moveJoystick.vx = 0;
-    if (keys['Space']) fireButton.active = true;
-
-    playerTank.update(dt, moveJoystick);
-    if (fireButton.active && Date.now() - playerTank.lastShotTime > 450) { playerTank.shoot(); playerTank.lastShotTime = Date.now(); }
-    enemies.forEach(e => e.update(dt));
-    bullets.forEach(b => b.update(dt));
-
-    const off = new THREE.Vector3(0, 0, cameraDistance).applyEuler(new THREE.Euler(-cameraPitch, cameraYaw, 0));
-    camera.position.copy(playerTank.group.position).add(off);
-    camera.position.y += 15;
-    camera.lookAt(playerTank.group.position.x, 5, playerTank.group.position.z);
-
-    renderer.render(scene, camera);
-    uiCtx.clearRect(0,0,uiCanvas.width,uiCanvas.height);
-    moveJoystick.draw(uiCtx);
-    fireButton.draw(uiCtx);
-    playerHealthDisplay.textContent = "HP: " + Math.max(0, Math.ceil(playerTank.health)) + "/100";
-    scoreDisplay.textContent = "Điểm: " + score;
-
-    if (playerTank.health <= 0) gameActive = false;
-    requestAnimationFrame(loop);
 }
 
-function start() {
-    menuScreen.style.display = 'none'; gameArea.style.display = 'flex'; gameOverScreen.style.display = 'none';
+function start(mode) {
+    gameMode = mode;
+    menuScreen.style.display = 'none';
+    gameArea.style.display = 'flex';
+    gameOverScreen.style.display = 'none';
+
     initThreeJS();
-    moveJoystick = new Joystick(); fireButton = new FireBtn();
-    uiCanvas.width = window.innerWidth; uiCanvas.height = window.innerHeight;
-    playerTank = new Tank(0, 0, true, 0x2e7d32);
+
+    // Clear old scene objects
+    enemies.forEach(e => scene.remove(e.group));
+    bullets.forEach(b => scene.remove(b.mesh));
     enemies = []; bullets = [];
+    if (playerTank) scene.remove(playerTank.group);
+
+    uiCanvas.width = window.innerWidth; uiCanvas.height = window.innerHeight;
+    fireButton.update();
+
+    playerTank = new Tank(0, 0, true, 0x2e7d32);
     for(let i=0; i<6; i++) {
         const x = (Math.random()-0.5)*400, z = (Math.random()-0.5)*400;
         if (Math.abs(x)>60 || Math.abs(z)>60) enemies.push(new Tank(x, z, false, 0x990000));
     }
-    gameActive = true; score = 0;
-    setupEvents();
-    loop();
+
+    score = 0;
+    gameActive = true;
+    clock.getDelta();
 }
 
 function setupEvents() {
@@ -256,6 +292,7 @@ function setupEvents() {
             if (lookTouchId === null) { lookTouchId = t.identifier; lastTouchX = t.clientX; lastTouchY = t.clientY; }
         }
     }, {passive:false});
+
     uiCanvas.addEventListener('touchmove', e => {
         e.preventDefault();
         for (let t of e.changedTouches) {
@@ -267,6 +304,7 @@ function setupEvents() {
             }
         }
     }, {passive:false});
+
     uiCanvas.addEventListener('touchend', e => {
         for (let t of e.changedTouches) {
             moveJoystick.up(t.identifier);
@@ -274,11 +312,14 @@ function setupEvents() {
             fireButton.active = false;
         }
     });
+
     window.addEventListener('keydown', e => keys[e.code] = true);
     window.addEventListener('keyup', e => keys[e.code] = false);
+
     uiCanvas.addEventListener('mousedown', e => {
         if (!fireButton.down(e.clientX, e.clientY)) { lookTouchId = 'm'; lastTouchX = e.clientX; lastTouchY = e.clientY; }
     });
+
     window.addEventListener('mousemove', e => {
         if (lookTouchId === 'm') {
             cameraYaw -= (e.clientX - lastTouchX) * 0.005;
@@ -286,13 +327,40 @@ function setupEvents() {
             lastTouchX = e.clientX; lastTouchY = e.clientY;
         }
     });
+
     window.addEventListener('mouseup', () => { fireButton.active = false; lookTouchId = null; });
+
+    window.addEventListener('resize', () => {
+        if (camera) {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        }
+        if (renderer) renderer.setSize(window.innerWidth, window.innerHeight);
+        uiCanvas.width = window.innerWidth;
+        uiCanvas.height = window.innerHeight;
+        if (fireButton) fireButton.update();
+    });
 }
 
-document.getElementById('survivalBtn').onclick = start;
-document.getElementById('waveBtn').onclick = start;
-document.getElementById('timeAttackBtn').onclick = start;
-document.getElementById('bossBattleBtn').onclick = start;
-document.getElementById('restartBtn').onclick = start;
-document.getElementById('menuFromGameOverBtn').onclick = () => location.reload();
-document.getElementById('backToMenuBtn').onclick = () => location.reload();
+function showGameOverScreen() {
+    gameOverScreen.style.display = 'block';
+    document.getElementById('finalScore').textContent = score;
+}
+
+function init() {
+    moveJoystick = new Joystick();
+    fireButton = new FireBtn();
+    setupEvents();
+
+    document.getElementById('survivalBtn').onclick = () => start('survival');
+    document.getElementById('waveBtn').onclick = () => start('wave_defense');
+    document.getElementById('timeAttackBtn').onclick = () => start('time_attack');
+    document.getElementById('bossBattleBtn').onclick = () => start('boss_battle');
+    document.getElementById('restartBtn').onclick = () => start(gameMode);
+    document.getElementById('menuFromGameOverBtn').onclick = () => location.reload();
+    document.getElementById('backToMenuBtn').onclick = () => location.reload();
+
+    loop();
+}
+
+init();
