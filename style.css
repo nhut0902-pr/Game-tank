@@ -141,6 +141,11 @@ body {
 #playerHealthDisplay { color: #f1c40f; }
 
 #gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: auto;
+    background-color: transparent !important;
     background-color: #7f8c8d;
     border: 3px solid var(--panel-color);
 }
@@ -228,3 +233,104 @@ body {
 .garage-item .item-preview-color { width: 40px; height: 40px; border: 1px solid #ccc; border-radius: 4px; margin: 0 auto 0.5rem; }
 .garage-item .item-preview-placeholder { width: 60px; height: 40px; margin: 0 auto 0.5rem; background: #555; display: flex; justify-content: center; align-items: center; border-radius: 4px;}
 .garage-item p { font-size: 0.8rem; }
+
+/* --- Orientation Warning --- */
+@media screen and (orientation: portrait) {
+    #orientationWarning {
+        display: flex !important;
+    }
+}
+
+#orientationWarning {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.9);
+    z-index: 9999;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+#orientationWarning .icon {
+    font-size: 50px;
+    margin-bottom: 20px;
+    animation: rotate 2s infinite;
+}
+
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* Hide canvas on portrait to force landscape */
+@media screen and (orientation: portrait) {
+    #gameArea { display: none !important; }
+}
+
+#gameArea {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+}
+
+#statusBar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    background: rgba(0,0,0,0.5);
+    pointer-events: none; /* Let touches pass through to canvas if needed, but buttons should still work */
+}
+
+#statusBar button {
+    pointer-events: auto;
+}
+
+canvas {
+    display: block;
+}
+
+/* Fullscreen fix for mobile */
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: fixed; /* Prevents bounce scroll on iOS */
+}
+
+#gameArea canvas {
+    touch-action: none; /* Crucial for Three.js touch handling */
+}
+
+/* Ensure UI buttons are clickable on top of 3D canvas */
+.screen {
+    z-index: 1;
+}
+
+#gameArea {
+    z-index: 2;
+}
+
+#statusBar {
+    pointer-events: none;
+}
+
+#statusBar button, #statusBar span {
+    pointer-events: auto;
+}
