@@ -1,0 +1,386 @@
+:root {
+  --text-main: #333;
+  --text-muted: #666;
+  --bg-color: #f7f7f7;
+  --hud-bg: #fff;
+  --border-color: #eee;
+  --palace-color: #f0f4f0;
+  --gate-color: #cfd4d9;
+  --gate-pillar: #9ea5aa;
+  --gate-gold: #c6a664;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+#game-container {
+  width: 100%;
+  max-width: 1400px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  position: relative;
+}
+
+/* HUD */
+.hud {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 60px;
+  padding: 20px 40px;
+  position: relative;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-box .label {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.stat-box .value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #444;
+}
+
+.restart-btn {
+  position: absolute;
+  right: 30px;
+  top: 25px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.restart-btn:hover {
+  transform: rotate(90deg);
+  color: #000;
+}
+
+/* SCENE */
+.scene {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 450px;
+  background: #fdfdfd;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* CSS Art for Dinh Độc Lập (Simplified) */
+.palace-bg {
+  position: absolute;
+  bottom: 80px;
+  left: 10%;
+  width: 60%;
+  height: 250px;
+  background: 
+    linear-gradient(to right, #eef3ed 0%, #eef3ed 100%) center 180px / 90% 70px no-repeat, /* Base */
+    linear-gradient(to right, #d4e0d4 0%, #d4e0d4 100%) center 170px / 95% 10px no-repeat, /* Trim */
+    linear-gradient(to right, #eef3ed 0%, #eef3ed 100%) center 80px / 80% 90px no-repeat, /* Mid floor */
+    repeating-linear-gradient(to right, transparent, transparent 15px, #d4e0d4 15px, #d4e0d4 25px) center 80px / 80% 90px no-repeat, /* Columns */
+    linear-gradient(to right, #d4e0d4 0%, #d4e0d4 100%) center 70px / 85% 10px no-repeat, /* Trim 2 */
+    linear-gradient(to right, #eef3ed 0%, #eef3ed 100%) center 20px / 50% 50px no-repeat, /* Top floor */
+    linear-gradient(to right, #c3d1c3 0%, #c3d1c3 100%) center 10px / 52% 10px no-repeat; /* Roof */
+  z-index: 1;
+  opacity: 0.9;
+}
+
+/* Gates */
+.gate-container {
+  position: absolute;
+  bottom: 60px;
+  left: 5%;
+  width: 60%;
+  height: 180px;
+  display: flex;
+  align-items: flex-end;
+  z-index: 2;
+}
+
+.gate {
+  position: relative;
+  height: 100%;
+  border-left: 12px solid var(--gate-pillar);
+  border-right: 12px solid var(--gate-pillar);
+  background: repeating-linear-gradient(to right, transparent, transparent 12px, var(--gate-color) 12px, var(--gate-color) 16px);
+  display: flex;
+  align-items: flex-end;
+}
+
+.gate::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: -12px; right: -12px;
+  height: 30px;
+  background: var(--gate-gold);
+  z-index: -1;
+}
+
+.left-gate {
+  width: 40%;
+  margin-right: 2%;
+  height: 80%;
+}
+
+.right-gate {
+  width: 58%;
+}
+
+/* Gate doors animation classes */
+.gate-door {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  transform-origin: right bottom;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.crashed .left-gate {
+  transform: rotate(-75deg) translate(-20px, 50px);
+  opacity: 0.5;
+  transition: all 0.8s ease-in;
+}
+
+.crashed .right-gate {
+  transform: rotate(85deg) translate(50px, 20px);
+  opacity: 0.5;
+  transition: all 0.6s ease-in;
+}
+
+/* Tank */
+.tank {
+  position: absolute;
+  bottom: 50px;
+  right: -300px; /* Start off screen */
+  width: 280px;
+  height: 120px;
+  z-index: 5;
+  will-change: transform;
+}
+
+.tank-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Using CSS to draw a basic tank */
+.tank-body::after { /* Main Hull */
+  content: '';
+  position: absolute;
+  bottom: 25px;
+  left: 20px;
+  width: 240px;
+  height: 45px;
+  background: #2a3328;
+  border-radius: 10px 40px 10px 10px;
+  box-shadow: inset 0 -10px 20px rgba(0,0,0,0.5);
+}
+
+.tank-turret {
+  position: absolute;
+  bottom: 70px;
+  left: 80px;
+  width: 110px;
+  height: 45px;
+  background: #334031;
+  border-radius: 50px 50px 10px 10px;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-shadow: inset 0 -5px 10px rgba(0,0,0,0.5);
+  z-index: 2;
+}
+
+.tank-turret .star {
+  color: yellow;
+  font-size: 12px;
+}
+
+.tank-gun {
+  position: absolute;
+  left: -140px;
+  top: 15px;
+  width: 140px;
+  height: 8px;
+  background: #1a2219;
+  border-radius: 5px 0 0 5px;
+}
+
+.tank-tracks {
+  position: absolute;
+  bottom: 5px;
+  left: 10px;
+  width: 260px;
+  height: 30px;
+  background: #111;
+  border-radius: 15px;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 0 5px;
+  box-shadow: 0 5px 5px rgba(0,0,0,0.3);
+}
+
+.wheel {
+  width: 22px;
+  height: 22px;
+  background: #333;
+  border-radius: 50%;
+  border: 4px solid #555;
+}
+
+.moving .wheel {
+  animation: roll 0.2s linear infinite;
+}
+
+@keyframes roll {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* FOOTER / INFO */
+.footer-info {
+  padding: 30px 40px;
+  background: white;
+}
+
+.info-row {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 20px;
+}
+
+.history-block {
+  flex: 1;
+}
+
+.history-block h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #222;
+}
+
+.history-block p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.leaderboard-block {
+  flex: 1;
+}
+
+.leaderboard-block h2 {
+  font-size: 16px;
+  margin-bottom: 4px;
+  color: #222;
+}
+
+.leaderboard-block .note {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.leaderboard-table th, .leaderboard-table td {
+  text-align: right;
+  padding: 6px 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.leaderboard-table th:first-child, .leaderboard-table td:first-child {
+  text-align: left;
+}
+
+.leaderboard-table th {
+  color: #888;
+  font-weight: 600;
+}
+
+.leaderboard-table td {
+  color: #555;
+}
+
+.leaderboard-table tr.highlight td {
+  color: #000;
+  font-weight: 600;
+}
+
+/* TICKER */
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: #f8f9fa;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.ticker {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 25s linear infinite;
+}
+
+.ticker-item {
+  display: inline-block;
+  padding: 0 2rem;
+  font-size: 12px;
+  color: #555;
+}
+
+@keyframes ticker {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+@media (max-width: 768px) {
+  .info-row {
+    flex-direction: column;
+  }
+  .hud {
+    gap: 20px;
+  }
+  .gate-container {
+    width: 80%;
+  }
+}

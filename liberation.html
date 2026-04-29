@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Thần Tốc - Giải Phóng Dinh Độc Lập 30/4/1975</title>
+  <link rel="stylesheet" href="/src/liberation.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Top HUD -->
+    <header class="hud">
+      <div class="stat-box">
+        <span class="label">Cổng trái</span>
+        <span class="value" id="dist-left">0m</span>
+      </div>
+      <div class="stat-box">
+        <span class="label">Cổng phải</span>
+        <span class="value" id="dist-right">0m</span>
+      </div>
+      <div class="stat-box">
+        <span class="label">Tốc độ xe tăng</span>
+        <span class="value" id="speed">0km/h</span>
+      </div>
+      <button class="restart-btn" id="restart-btn" aria-label="Khởi động lại">↻</button>
+    </header>
+
+    <!-- Main Game Scene -->
+    <main class="scene" id="scene">
+      <!-- Background / Palace -->
+      <div class="palace-bg"></div>
+      
+      <!-- Gates -->
+      <div class="gate-container">
+        <div class="gate left-gate" id="left-gate">
+          <div class="gate-door left-door"></div>
+        </div>
+        <div class="gate right-gate main-gate" id="main-gate">
+          <div class="gate-door right-door"></div>
+        </div>
+      </div>
+
+      <!-- Tank -->
+      <div class="tank" id="tank">
+        <div class="tank-body">
+          <div class="tank-turret">
+            <span class="star">★</span> 390
+            <div class="tank-gun"></div>
+          </div>
+          <div class="tank-tracks">
+            <div class="wheel"></div><div class="wheel"></div><div class="wheel"></div><div class="wheel"></div><div class="wheel"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Information -->
+    <footer class="footer-info">
+      <div class="info-row">
+        <div class="history-block">
+          <h2>Thần tốc, táo bạo, quyết chiến và toàn thắng</h2>
+          <p>Trưa 30/4/1975, trên đại lộ Thống Nhất, đội hình xe tăng Quân đoàn 2 thần tốc tiến vào Dinh Độc Lập. Xe tăng 843 do <em>Đại đội trưởng Bùi Quang Thận</em> chỉ huy húc đổ cổng phụ, mở đường cho xe tăng 390 do <em>Trung úy Vũ Đăng Toàn</em> chỉ huy lao tới, húc tung cổng chính, tiến thẳng vào sân Dinh.</p>
+          <p><em>Bùi Quang Thận</em> nhanh chóng cắm lá cờ giải phóng trên nóc Dinh, đánh dấu thời khắc lịch sử: chế độ Sài Gòn sụp đổ, Chiến dịch Hồ Chí Minh toàn thắng! [*]</p>
+        </div>
+        
+        <div class="leaderboard-block">
+          <h2>Chiến sĩ hăng hái</h2>
+          <p class="note">*Các tên được đặt ngẫu nhiên cho người chơi, không mang mục đích khác.</p>
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Chiến sĩ</th>
+                <th>Cổng trái</th>
+                <th>Cổng phải</th>
+                <th>Tốc độ xe tăng</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Bún Bò Ú Trấu</td><td>Mất Hút</td><td>Vũ Trụ 2</td><td>Không Tưởng 2</td></tr>
+              <tr><td>Chả Giò Cận Đất</td><td>Mất Hút</td><td>San Rô - Dê</td><td>Không Tưởng</td></tr>
+              <tr><td>Gỏi Cuốn Quê Hương</td><td>Không Tìm Thấy</td><td>Mất Hút</td><td>Quái Xế</td></tr>
+              <tr><td>Bánh Canh Cận Đát</td><td>Mất Hút</td><td>VLU</td><td>Quái Xế</td></tr>
+              <tr class="highlight"><td>Chả Giò Cháy Cạnh (Bạn)</td><td>Nhật Bản</td><td>Quận 2</td><td>Quái Xế</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Marquee Ticker -->
+      <div class="ticker-wrap">
+        <div class="ticker">
+          <span class="ticker-item">🇻🇳 Chiến sĩ <strong>Bánh Bao Xóc Tỏi</strong> quyết liệt húc cổng trái bay sang <strong>Quận 2</strong>, cổng phải đến <strong>Mỹ</strong> 🇻🇳</span>
+          <span class="ticker-item">🇻🇳 Chiến sĩ <strong>Bánh Bèo Xào Me</strong> bất ngờ tông sập cổng chính 🇻🇳</span>
+          <span class="ticker-item">🇻🇳 Chào mừng ngày Giải phóng miền Nam, thống nhất đất nước 30/4/1975 🇻🇳</span>
+          <span class="ticker-item">🇻🇳 Chiến sĩ <strong>Bánh Bao Xóc Tỏi</strong> quyết liệt húc cổng trái bay sang <strong>Quận 2</strong>, cổng phải đến <strong>Mỹ</strong> 🇻🇳</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/src/liberation.js" type="module"></script>
+</body>
+</html>
