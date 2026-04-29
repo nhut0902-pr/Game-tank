@@ -1,101 +1,83 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tank Battle Advanced</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- 'defer' đảm bảo HTML được tải xong trước khi chạy JS. Đây là chìa khóa! -->
-    <script src="script.js" defer></script>
-</head>
-<body>
-    <!-- 1. Màn hình Menu Chính -->
-    <div id="menuScreen" class="screen">
-        <h1>Tank Battle Advanced</h1>
-        <div class="menu-high-scores">
-            <p>Sinh Tồn: <span id="survivalHighScore">0</span></p>
-            <p>Phòng Thủ: <span id="waveHighScore">0</span></p>
-            <p>Tấn Công TG: <span id="timeAttackHighScore">0</span></p>
-        </div>
-        <div class="menu-buttons">
-            <button id="survivalBtn" class="menu-btn">Chế Độ Sinh Tồn</button>
-            <button id="waveBtn" class="menu-btn">Chế Độ Phòng Thủ</button>
-            <button id="timeAttackBtn" class="menu-btn">Tấn Công Thời Gian</button>
-            <button id="bossBattleBtn" class="menu-btn">Đấu Trùm</button>
-        </div>
-        <div class="menu-secondary-buttons">
-            <button id="garageBtn" class="secondary-btn">Nhà Xe</button>
-            <button id="shopBtn" class="secondary-btn">Cửa Hàng</button>
-        </div>
-        <p class="currency-display">Tiền: <span id="currencyMenu">0</span> G</p>
-    </div>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>UFO Tank 3D</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <canvas id="game" aria-label="UFO Tank 3D game"></canvas>
 
-    <!-- 2. Khu vực Chơi Game -->
-    <div id="gameArea" class="screen" style="display: none;">
-        <div id="statusBar">
-            <span id="gameModeDisplay">Chế độ:</span>
-            <span id="scoreDisplay">Điểm: 0</span>
-            <span id="playerHealthDisplay">HP: 100/100</span>
-            <span id="waveInfo" style="display: none;">Wave: <span id="waveDisplay">1</span> | Còn Lại: <span id="enemiesLeftDisplay">0</span></span>
-            <span id="timeInfo" style="display: none;"><span id="timeDisplay">60.0s</span></span>
-            <span id="bossInfo" style="display: none;">Boss HP: <span id="bossHealthDisplay">500</span></span>
-            <span class="currency-display-game">Tiền: <span id="currencyGame">0</span> G</span>
-            <button id="backToMenuBtn" class="ingame-btn">Về Menu</button>
+    <main class="hud" aria-live="polite">
+      <section class="topbar">
+        <div class="stat-block health-block">
+          <span>HP</span>
+          <div class="health-track" aria-hidden="true">
+            <div id="healthFill" class="health-fill"></div>
+          </div>
+          <strong id="healthText">100</strong>
         </div>
-        <canvas id="gameCanvas"></canvas>
-    </div>
+        <div class="stat-block">
+          <span>SCORE</span>
+          <strong id="scoreText">0</strong>
+        </div>
+        <div class="stat-block">
+          <span>WAVE</span>
+          <strong id="waveText">1</strong>
+        </div>
+        <button id="pauseButton" class="icon-button" type="button" aria-label="Pause">II</button>
+      </section>
 
-    <!-- 3. Màn hình Game Over / Victory -->
-    <div id="gameOverScreen" class="screen overlay" style="display: none;">
-        <div class="popup">
-            <h2 id="gameOverTitle">GAME OVER</h2>
-            <p>Điểm cuối cùng: <span id="finalScore">0</span></p>
-            <p id="waveReached" style="display: none;">Đạt đến Wave: <span id="finalWave">0</span></p>
-            <p>Tiền kiếm được: <span id="moneyEarned">0</span> G</p>
-            <button id="restartBtn" class="popup-btn">Chơi Lại</button>
-            <button id="menuFromGameOverBtn" class="popup-btn">Về Menu</button>
-        </div>
-    </div>
+      <div class="mode-badge">
+        <strong id="modeNameText">CHỌN MODE</strong>
+        <span id="modeHelpText">AUTO-FIRE</span>
+      </div>
 
-    <!-- 4. Màn hình Cửa Hàng (Shop) -->
-    <div id="shopScreen" class="screen" style="display: none;">
-        <div class="header-bar">
-            <h2>Cửa Hàng</h2>
-            <p class="currency-display">Tiền của bạn: <span id="currencyShop">0</span> G</p>
-        </div>
-        <div id="shopItemsContainer" class="items-container">
-            <!-- Vật phẩm sẽ được JS chèn vào đây -->
-        </div>
-        <button id="backToMenuFromShopBtn" class="back-btn">Trở Về Menu</button>
-    </div>
+      <div class="crosshair" aria-hidden="true">
+        <span></span>
+        <span></span>
+      </div>
 
-    <!-- 5. Màn hình Nhà Xe (Garage) -->
-    <div id="garageScreen" class="screen" style="display: none;">
-         <div class="header-bar">
-            <h2>Nhà Xe</h2>
-            <p class="currency-display">Tiền của bạn: <span id="currencyGarage">0</span> G</p>
+      <section class="touch-layer" aria-hidden="true">
+        <div id="joystick" class="joystick">
+          <div id="joystickStick" class="joystick-stick"></div>
         </div>
-        <div class="garage-layout">
-            <div class="garage-preview">
-                <h3>Xem Trước Xe Tăng</h3>
-                <canvas id="garageTankCanvas" width="250" height="200"></canvas>
-            </div>
-            <div class="garage-parts">
-                <div class="part-category">
-                    <h3>Thân Xe</h3>
-                    <div id="bodyItemsContainer" class="garage-items-grid"></div>
-                </div>
-                <div class="part-category">
-                    <h3>Tháp Pháo</h3>
-                    <div id="turretItemsContainer" class="garage-items-grid"></div>
-                </div>
-                <div class="part-category">
-                    <h3>Sơn</h3>
-                    <div id="paintItemsContainer" class="garage-items-grid"></div>
-                </div>
-            </div>
+        <button id="fireButton" class="fire-button" type="button" aria-label="Fire">◎</button>
+      </section>
+
+      <section id="modePanel" class="mode-panel">
+        <div class="mode-panel-header">
+          <h1>CHỌN CHẾ ĐỘ</h1>
+          <p>Ngắm vào UFO để xe tăng tự bắn.</p>
         </div>
-        <button id="backToMenuFromGarageBtn" class="back-btn">Trở Về Menu</button>
-    </div>
-</body>
+        <div class="mode-grid">
+          <button class="mode-card" type="button" data-mode="training">
+            <span>TẬP LUYỆN</span>
+            <strong>Êm</strong>
+          </button>
+          <button class="mode-card active" type="button" data-mode="survival">
+            <span>SINH TỒN</span>
+            <strong>Chuẩn</strong>
+          </button>
+          <button class="mode-card" type="button" data-mode="assault">
+            <span>ĐỘT KÍCH</span>
+            <strong>Căng</strong>
+          </button>
+        </div>
+      </section>
+
+      <section id="statusPanel" class="status-panel hidden">
+        <h1 id="statusTitle">PAUSED</h1>
+        <p id="statusLine">SCORE 0</p>
+        <div class="status-actions">
+          <button id="restartButton" class="primary-button" type="button">RETRY</button>
+          <button id="chooseModeButton" class="secondary-button" type="button">MODE</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
