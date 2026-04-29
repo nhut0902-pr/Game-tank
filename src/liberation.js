@@ -5,82 +5,123 @@ document.addEventListener("DOMContentLoaded", () => {
   const distRightEl = document.getElementById("dist-right");
   const speedEl = document.getElementById("speed");
   const restartBtn = document.getElementById("restart-btn");
+  const instructionEl = document.getElementById("instruction");
 
   let animationId;
-  let startTime;
+  let lastTime = 0;
   let isCrashed = false;
   
   // Game parameters
-  const totalDistance = 150; // virtual meters
-  const startX = 0; // css transform translateX
-  const endX = -800; // end position in px
-  const durationMs = 6000; // 6 seconds to crash
-  const crashPointRatio = 0.75; // crashes at 75% of the distance
+  const initialDistance = 150; // meters
+  let distance = initialDistance;
+  let speed = 0; // km/h
+  const maxSpeed = 70; // max km/h
+  const startX = 0; 
+  const endX = -800; // The transform X offset when reaching the gates
 
-  function startAnimation() {
-    isCrashed = false;
-    gateContainer.classList.remove("crashed");
+  function accelerate(amount) {
+    if (isCrashed) return;
+    speed += amount;
+    if (speed > maxSpeed) speed = maxSpeed;
     tank.classList.add("moving");
-    startTime = null;
-    
-    cancelAnimationFrame(animationId);
-    animationId = requestAnimationFrame(animate);
+    instructionEl.style.opacity = '0.5'; // dim instruction when playing
   }
 
-  function animate(timestamp) {
-    if (!startTime) startTime = timestamp;
-    const elapsed = timestamp - startTime;
-    
-    // Progress 0 to 1
-    let progress = Math.min(elapsed / durationMs, 1);
-    
-    // Smooth acceleration and deceleration (optional, using linear for raw power)
-    let easeProgress = progress * progress * (3 - 2 * progress);
-    
-    // Update Tank Position
-    const currentX = startX + (endX - startX) * easeProgress;
-    tank.style.transform = `translateX(${currentX}px)`;
-    
-    // Update Speed (simulated km/h)
-    // Speed increases to max around middle, then maybe drops slightly at crash
-    let speed = 0;
-    if (progress < 0.2) {
-      speed = (progress / 0.2) * 45;
-    } else if (progress < crashPointRatio) {
-      speed = 45 + Math.random() * 5; // max speed ~50km/h
-    } else {
-      speed = Math.max(0, 50 - ((progress - crashPointRatio) / (1 - crashPointRatio)) * 50);
+  // Handle Input
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      accelerate(6);
     }
-    speedEl.textContent = `${Math.floor(speed)}km/h`;
+  });
+
+  // Touch or click to accelerate
+  window.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button") || e.target.closest("a")) return;
+    accelerate(6);
+  });
+
+  function resetGame() {
+    isCrashed = false;
+    gateContainer.classList.remove("crashed");
+    tank.classList.remove("moving");
+    distance = initialDistance;
+    speed = 0;
+    lastTime = 0;
+    instructionEl.style.opacity = '1';
+    instructionEl.querySelector("span").textContent = "BẤM LIÊN TỤC VÀO MÀN HÌNH HOẶC PHÍM SPACE ĐỂ ĐẠP GA!";
     
-    // Update Distances
-    const currentDist = Math.max(0, totalDistance - (progress / crashPointRatio) * totalDistance);
-    
-    // Cổng trái and Cổng phải text
-    if (progress >= crashPointRatio && !isCrashed) {
-      isCrashed = true;
-      gateContainer.classList.add("crashed");
-      distLeftEl.textContent = "Mất Hút";
-      distRightEl.textContent = "Nhật Bản";
-    } else if (!isCrashed) {
-      distLeftEl.textContent = `${Math.floor(currentDist)}m`;
-      distRightEl.textContent = `${Math.floor(currentDist)}m`;
+    cancelAnimationFrame(animationId);
+    animationId = requestAnimationFrame(update);
+  }
+
+  function update(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const dt = (timestamp - lastTime) / 1000; // in seconds
+    lastTime = timestamp;
+
+    if (!isCrashed) {
+      // Natural deceleration (friction)
+      if (speed > 0) {
+        speed -= 15 * dt; // lose speed over time if not pushing
+        if (speed < 0) speed = 0;
+      }
+      
+      if (speed === 0 && distance < initialDistance) {
+        tank.classList.remove("moving");
+      }
+
+      // Move distance based on speed
+      // 1 km/h mapped to roughly 1 m/s for arcade feel
+      distance -= speed * dt;
+      
+      if (distance <= 0) {
+        distance = 0;
+        crash(speed);
+      }
+
+      // Update UI
+      speedEl.textContent = `${Math.floor(speed)}km/h`;
+      if (!isCrashed) {
+        distLeftEl.textContent = `${Math.floor(distance)}m`;
+        distRightEl.textContent = `${Math.floor(distance)}m`;
+      }
+
+      // Update Visuals
+      const progress = 1 - (distance / initialDistance);
+      const currentX = startX + (endX - startX) * progress;
+      tank.style.transform = `translateX(${currentX}px)`;
     }
 
-    if (progress < 1) {
-      animationId = requestAnimationFrame(animate);
+    animationId = requestAnimationFrame(update);
+  }
+
+  function crash(impactSpeed) {
+    isCrashed = true;
+    tank.classList.remove("moving");
+    speedEl.textContent = "0km/h";
+    
+    // Check if speed is enough to break gates
+    if (impactSpeed >= 25) {
+      gateContainer.classList.add("crashed");
+      distLeftEl.textContent = "Bay sang Quận 2";
+      distRightEl.textContent = "Mất hút";
+      instructionEl.querySelector("span").textContent = "THÀNH CÔNG! CHIẾN DỊCH HỒ CHÍ MINH TOÀN THẮNG!";
+      instructionEl.style.color = "#008000"; // green text
     } else {
-      tank.classList.remove("moving");
-      speedEl.textContent = "0km/h";
+      // Not fast enough
+      distLeftEl.textContent = "Chưa vỡ";
+      distRightEl.textContent = "Móp nhẹ";
+      instructionEl.querySelector("span").textContent = `THẤT BẠI! TỐC ĐỘ QUÁ CHẬM (${Math.floor(impactSpeed)}km/h). HÃY ĐẠP GA NHANH HƠN NỮA!`;
+      instructionEl.style.color = "#b30000";
     }
+    instructionEl.style.opacity = '1';
   }
 
   restartBtn.addEventListener("click", () => {
-    startAnimation();
+    resetGame();
   });
 
-  // Delay start slightly for effect
-  setTimeout(() => {
-    startAnimation();
-  }, 500);
+  // Start loop
+  animationId = requestAnimationFrame(update);
 });

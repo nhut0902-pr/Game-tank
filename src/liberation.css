@@ -82,6 +82,24 @@ body {
   color: #000;
 }
 
+/* INSTRUCTION */
+.instruction {
+  text-align: center;
+  padding: 10px;
+  background: #ffecb3;
+  color: #b30000;
+  font-weight: bold;
+  font-size: 16px;
+  letter-spacing: 1px;
+  z-index: 10;
+  animation: flashText 1.5s infinite alternate;
+}
+
+@keyframes flashText {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
 /* SCENE */
 .scene {
   flex: 1;
