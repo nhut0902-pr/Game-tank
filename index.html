@@ -1,83 +1,512 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
-    <title>UFO Tank 3D</title>
-    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="description" content="UFO Tank 3D — Game bắn xe tăng 3D với 5 chế độ chơi. Chế độ đặc biệt: Húc Cổng Dinh Độc Lập 30/4!" />
+    <title>UFO Tank 3D — Chọn Chế Độ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --glass: rgba(11, 18, 32, 0.62);
+        --glass-border: rgba(226, 232, 240, 0.18);
+        --accent: #67e8f9;
+        --gold: #facc15;
+        --red: #ef4444;
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-top: env(safe-area-inset-top, 0px);
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%; height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: #0a0e1a;
+        font-family: 'Outfit', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        color: #f8fafc;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+
+      /* ===== ANIMATED BACKGROUND ===== */
+      .bg-scene {
+        position: fixed; inset: 0; z-index: 0;
+        overflow: hidden;
+        background: linear-gradient(135deg, #0a0e1a 0%, #1a0a12 25%, #0f172a 50%, #1a1005 75%, #0a0e1a 100%);
+        background-size: 400% 400%;
+        animation: bgShift 12s ease infinite;
+      }
+
+      @keyframes bgShift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+      }
+
+      .bg-scene::before {
+        content: '';
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 600px 400px at 20% 30%, rgba(239,68,68,0.12), transparent),
+          radial-gradient(ellipse 500px 500px at 80% 70%, rgba(250,204,21,0.08), transparent),
+          radial-gradient(ellipse 300px 300px at 50% 50%, rgba(103,232,249,0.06), transparent);
+        animation: glowPulse 6s ease-in-out infinite alternate;
+      }
+
+      @keyframes glowPulse {
+        0% { opacity: 0.6; }
+        100% { opacity: 1; }
+      }
+
+      /* Floating particles */
+      .particle {
+        position: absolute;
+        width: 3px; height: 3px;
+        border-radius: 50%;
+        background: rgba(250,204,21,0.4);
+        animation: float linear infinite;
+        pointer-events: none;
+      }
+
+      @keyframes float {
+        0% { transform: translateY(100vh) scale(0); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+      }
+
+      /* ===== MAIN CONTAINER ===== */
+      .menu-container {
+        position: relative; z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        padding: 40px 20px calc(32px + var(--safe-bottom));
+        padding-top: calc(40px + var(--safe-top));
+      }
+
+      /* ===== HEADER ===== */
+      .menu-header {
+        text-align: center;
+        margin-bottom: 36px;
+        animation: fadeSlideDown 0.8s ease both;
+      }
+
+      @keyframes fadeSlideDown {
+        from { opacity: 0; transform: translateY(-24px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .menu-header h1 {
+        font-size: clamp(32px, 7vw, 56px);
+        font-weight: 900;
+        letter-spacing: -1px;
+        line-height: 1.1;
+        background: linear-gradient(135deg, #67e8f9, #f8fafc, #facc15);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 4px 20px rgba(103,232,249,0.3));
+      }
+
+      .menu-header p {
+        margin-top: 10px;
+        font-size: clamp(13px, 2.2vw, 16px);
+        font-weight: 600;
+        color: #94a3b8;
+        letter-spacing: 0.5px;
+      }
+
+      .date-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 14px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(250,204,21,0.15));
+        border: 1px solid rgba(250,204,21,0.3);
+        font-size: 13px;
+        font-weight: 800;
+        color: #fde68a;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(250,204,21,0.3); }
+        50% { box-shadow: 0 0 0 8px rgba(250,204,21,0); }
+      }
+
+      /* ===== MODE GRID ===== */
+      .mode-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+        width: 100%;
+        max-width: 680px;
+        animation: fadeSlideUp 0.8s ease 0.15s both;
+      }
+
+      @keyframes fadeSlideUp {
+        from { opacity: 0; transform: translateY(28px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .mode-grid .row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      /* ===== MODE CARD ===== */
+      .mode-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 100px;
+        padding: 18px 20px;
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        background:
+          linear-gradient(145deg, rgba(14,165,233,0.08), rgba(15,23,42,0.6)),
+          rgba(15,23,42,0.7);
+        backdrop-filter: blur(16px);
+        cursor: pointer;
+        overflow: hidden;
+        transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .mode-card:hover {
+        transform: translateY(-3px) scale(1.015);
+        box-shadow: 0 18px 48px rgba(14,165,233,0.15);
+        border-color: rgba(103,232,249,0.4);
+      }
+
+      .mode-card:active {
+        transform: translateY(0) scale(0.98);
+      }
+
+      .mode-card .card-icon {
+        font-size: 28px;
+        margin-bottom: 6px;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+      }
+
+      .mode-card .card-label {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #bae6fd;
+        text-transform: uppercase;
+      }
+
+      .mode-card .card-name {
+        font-size: clamp(20px, 4vw, 28px);
+        font-weight: 900;
+        line-height: 1.15;
+        margin-top: 4px;
+      }
+
+      .mode-card .card-desc {
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-top: 6px;
+        line-height: 1.4;
+      }
+
+      .mode-card .card-difficulty {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 10px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 800;
+        background: rgba(255,255,255,0.06);
+        color: #cbd5e1;
+        width: fit-content;
+      }
+
+      /* ===== FEATURED: LIBERATION MODE ===== */
+      .mode-card.featured {
+        grid-column: 1 / -1;
+        min-height: 140px;
+        border-color: rgba(250,204,21,0.4);
+        background:
+          linear-gradient(145deg, rgba(239,68,68,0.12), rgba(250,204,21,0.08), rgba(15,23,42,0.7)),
+          rgba(15,23,42,0.8);
+      }
+
+      .mode-card.featured::before {
+        content: '';
+        position: absolute;
+        top: -1px; left: -1px; right: -1px; bottom: -1px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(239,68,68,0.3), rgba(250,204,21,0.3), transparent, transparent);
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .mode-card.featured:hover {
+        border-color: rgba(250,204,21,0.6);
+        box-shadow: 0 18px 48px rgba(250,204,21,0.12), 0 0 0 1px rgba(250,204,21,0.2);
+      }
+
+      .mode-card.featured:hover::before {
+        opacity: 1;
+      }
+
+      .mode-card.featured .card-label {
+        color: #fde68a;
+      }
+
+      .mode-card.featured .card-name {
+        background: linear-gradient(135deg, #fde68a, #f87171, #fbbf24);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .featured-badge {
+        position: absolute;
+        top: 14px; right: 14px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: linear-gradient(135deg, #ef4444, #f59e0b);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 14px rgba(239,68,68,0.35);
+        animation: badgePulse 2.5s ease-in-out infinite;
+      }
+
+      @keyframes badgePulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+
+      /* ===== NIGHTMARE CARD ===== */
+      .mode-card.nightmare {
+        border-color: rgba(168,85,247,0.3);
+        background:
+          linear-gradient(145deg, rgba(168,85,247,0.1), rgba(239,68,68,0.06), rgba(15,23,42,0.7)),
+          rgba(15,23,42,0.8);
+      }
+
+      .mode-card.nightmare:hover {
+        border-color: rgba(168,85,247,0.5);
+        box-shadow: 0 18px 48px rgba(168,85,247,0.12);
+      }
+
+      .mode-card.nightmare .card-label {
+        color: #c4b5fd;
+      }
+
+      .mode-card.nightmare .card-name {
+        color: #e879f9;
+      }
+
+      /* ===== FOOTER ===== */
+      .menu-footer {
+        margin-top: 36px;
+        text-align: center;
+        animation: fadeSlideUp 0.8s ease 0.35s both;
+      }
+
+      .menu-footer .powered {
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+        letter-spacing: 0.5px;
+      }
+
+      .menu-footer .powered strong {
+        color: #67e8f9;
+        font-weight: 900;
+      }
+
+      .menu-footer .controls-hint {
+        margin-top: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #334155;
+        line-height: 1.6;
+      }
+
+      /* ===== RESPONSIVE: MOBILE ===== */
+      @media (max-width: 600px) {
+        .menu-container {
+          padding: 24px 14px calc(24px + var(--safe-bottom));
+          padding-top: calc(24px + var(--safe-top));
+        }
+
+        .menu-header { margin-bottom: 24px; }
+
+        .mode-grid { gap: 10px; }
+        .mode-grid .row-2 { gap: 10px; }
+
+        .mode-card {
+          min-height: 80px;
+          padding: 14px 16px;
+          border-radius: 12px;
+        }
+
+        .mode-card .card-icon { font-size: 22px; }
+        .mode-card .card-name { font-size: clamp(16px, 4vw, 22px); }
+        .mode-card .card-desc { font-size: 11px; }
+
+        .mode-card.featured { min-height: 110px; }
+
+        .featured-badge {
+          top: 10px; right: 10px;
+          font-size: 10px;
+          padding: 3px 8px;
+        }
+
+        .date-badge { font-size: 11px; padding: 5px 12px; }
+      }
+
+      /* ===== LANDSCAPE MOBILE ===== */
+      @media (max-height: 520px) and (orientation: landscape) {
+        .menu-container {
+          padding: 16px 24px;
+          min-height: auto;
+        }
+
+        .menu-header {
+          margin-bottom: 14px;
+        }
+
+        .menu-header h1 { font-size: 28px; }
+        .menu-header p { margin-top: 4px; font-size: 12px; }
+        .date-badge { margin-top: 6px; font-size: 10px; padding: 3px 10px; }
+
+        .mode-grid {
+          max-width: 800px;
+          gap: 8px;
+        }
+
+        .mode-grid .row-2 { gap: 8px; }
+
+        .mode-card {
+          min-height: 60px;
+          padding: 10px 14px;
+        }
+
+        .mode-card.featured { min-height: 70px; }
+        .mode-card .card-icon { font-size: 20px; margin-bottom: 2px; }
+        .mode-card .card-name { font-size: 16px; }
+        .mode-card .card-desc { display: none; }
+        .mode-card .card-difficulty { margin-top: 4px; font-size: 10px; }
+
+        .menu-footer { margin-top: 14px; }
+      }
+
+      /* ===== WIDE DESKTOP ===== */
+      @media (min-width: 768px) {
+        .mode-card .card-desc { font-size: 13px; }
+        .mode-card .card-icon { font-size: 32px; }
+      }
+    </style>
   </head>
   <body>
-    <canvas id="game" aria-label="UFO Tank 3D game"></canvas>
+    <div class="bg-scene" id="bgScene"></div>
 
-    <main class="hud" aria-live="polite">
-      <section class="topbar">
-        <div class="stat-block health-block">
-          <span>HP</span>
-          <div class="health-track" aria-hidden="true">
-            <div id="healthFill" class="health-fill"></div>
-          </div>
-          <strong id="healthText">100</strong>
+    <div class="menu-container">
+      <header class="menu-header">
+        <h1>UFO TANK 3D</h1>
+        <p>Chọn chế độ chơi để bắt đầu chiến đấu</p>
+        <div class="date-badge">
+          <span>⭐</span> Kỷ niệm Ngày Giải Phóng 30/4
         </div>
-        <div class="stat-block">
-          <span>SCORE</span>
-          <strong id="scoreText">0</strong>
-        </div>
-        <div class="stat-block">
-          <span>WAVE</span>
-          <strong id="waveText">1</strong>
-        </div>
-        <button id="pauseButton" class="icon-button" type="button" aria-label="Pause">II</button>
-      </section>
+      </header>
 
-      <div class="mode-badge">
-        <strong id="modeNameText">CHỌN MODE</strong>
-        <span id="modeHelpText">AUTO-FIRE</span>
+      <div class="mode-grid" id="modeGrid">
+        <!-- FEATURED: Liberation -->
+        <a href="game.html?mode=liberation" class="mode-card featured" id="mode-liberation">
+          <div class="featured-badge">🔥 ĐẶC BIỆT 30/4</div>
+          <div class="card-icon">🏛️</div>
+          <div class="card-label">Chế độ đặc biệt</div>
+          <div class="card-name">HÚC CỔNG DINH ĐỘC LẬP</div>
+          <div class="card-desc">Xe tăng 390 — Thần tốc, táo bạo, quyết chiến và toàn thắng! Tái hiện ngày 30/4/1975 lịch sử.</div>
+          <div class="card-difficulty">⚡ Thần Tốc · x1.5 điểm</div>
+        </a>
+
+        <!-- Row 2: Training + Survival -->
+        <div class="row-2">
+          <a href="game.html?mode=training" class="mode-card" id="mode-training">
+            <div class="card-icon">🎯</div>
+            <div class="card-label">Dễ</div>
+            <div class="card-name">TẬP LUYỆN</div>
+            <div class="card-desc">Êm nhẹ, auto-fire rộng, ít kẻ thù.</div>
+            <div class="card-difficulty">🟢 Dễ · x0.8 điểm</div>
+          </a>
+          <a href="game.html?mode=survival" class="mode-card" id="mode-survival">
+            <div class="card-icon">⚔️</div>
+            <div class="card-label">Chuẩn</div>
+            <div class="card-name">SINH TỒN</div>
+            <div class="card-desc">Cân bằng chuẩn, gameplay thú vị.</div>
+            <div class="card-difficulty">🟡 Chuẩn · x1.0 điểm</div>
+          </a>
+        </div>
+
+        <!-- Row 3: Assault + Nightmare -->
+        <div class="row-2">
+          <a href="game.html?mode=assault" class="mode-card" id="mode-assault">
+            <div class="card-icon">💥</div>
+            <div class="card-label">Khó</div>
+            <div class="card-name">ĐỘT KÍCH</div>
+            <div class="card-desc">Căng thẳng, nhiều UFO, bắn nhanh.</div>
+            <div class="card-difficulty">🟠 Căng · x1.35 điểm</div>
+          </a>
+          <a href="game.html?mode=nightmare" class="mode-card nightmare" id="mode-nightmare">
+            <div class="card-icon">💀</div>
+            <div class="card-label">Cực khó</div>
+            <div class="card-name">ÁC MỘNG</div>
+            <div class="card-desc">Không tha thứ. HP thấp, UFO cực nhanh.</div>
+            <div class="card-difficulty">🔴 Siêu khó · x2.0 điểm</div>
+          </a>
+        </div>
       </div>
 
-      <div class="crosshair" aria-hidden="true">
-        <span></span>
-        <span></span>
-      </div>
-
-      <section class="touch-layer" aria-hidden="true">
-        <div id="joystick" class="joystick">
-          <div id="joystickStick" class="joystick-stick"></div>
+      <footer class="menu-footer">
+        <div class="powered">powered by <strong>Nhutcoder Team</strong></div>
+        <div class="controls-hint">
+          Desktop: WASD + Chuột · Mobile: Joystick + Chạm
         </div>
-        <button id="fireButton" class="fire-button" type="button" aria-label="Fire">◎</button>
-      </section>
+      </footer>
+    </div>
 
-      <section id="modePanel" class="mode-panel">
-        <div class="mode-panel-header">
-          <h1>CHỌN CHẾ ĐỘ</h1>
-          <p>Ngắm vào UFO để xe tăng tự bắn.</p>
-        </div>
-        <div class="mode-grid">
-          <button class="mode-card" type="button" data-mode="training">
-            <span>TẬP LUYỆN</span>
-            <strong>Êm</strong>
-          </button>
-          <button class="mode-card active" type="button" data-mode="survival">
-            <span>SINH TỒN</span>
-            <strong>Chuẩn</strong>
-          </button>
-          <button class="mode-card" type="button" data-mode="assault">
-            <span>ĐỘT KÍCH</span>
-            <strong>Căng</strong>
-          </button>
-        </div>
-      </section>
-
-      <section id="statusPanel" class="status-panel hidden">
-        <h1 id="statusTitle">PAUSED</h1>
-        <p id="statusLine">SCORE 0</p>
-        <div class="status-actions">
-          <button id="restartButton" class="primary-button" type="button">RETRY</button>
-          <button id="chooseModeButton" class="secondary-button" type="button">MODE</button>
-        </div>
-      </section>
-    </main>
-
-    <script type="module" src="/src/main.js"></script>
+    <script>
+      // Generate floating particles
+      (function () {
+        const scene = document.getElementById('bgScene');
+        const count = window.innerWidth < 600 ? 18 : 32;
+        for (let i = 0; i < count; i++) {
+          const p = document.createElement('div');
+          p.className = 'particle';
+          p.style.left = Math.random() * 100 + '%';
+          p.style.animationDuration = (6 + Math.random() * 10) + 's';
+          p.style.animationDelay = Math.random() * 8 + 's';
+          p.style.width = p.style.height = (2 + Math.random() * 3) + 'px';
+          const colors = ['rgba(250,204,21,0.35)', 'rgba(103,232,249,0.25)', 'rgba(239,68,68,0.2)', 'rgba(248,250,252,0.15)'];
+          p.style.background = colors[Math.floor(Math.random() * colors.length)];
+          scene.appendChild(p);
+        }
+      })();
+    </script>
   </body>
 </html>

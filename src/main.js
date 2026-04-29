@@ -42,6 +42,26 @@ scene.fog = new THREE.Fog(0xdde8ef, 84, 202);
 const ARENA_RADIUS = 82;
 const PLAYER_RADIUS = 1.9;
 const GAME_MODES = {
+  liberation: {
+    label: "HÚC CỔNG DINH ĐỘC LẬP",
+    help: "THẦN TỐC 30/4",
+    health: 130,
+    playerSpeed: 23,
+    waveBase: 8,
+    waveScale: 2.1,
+    mobileCap: 16,
+    desktopCap: 24,
+    ufoHpBase: 1,
+    ufoHpEvery: 4,
+    ufoSpeed: 1.1,
+    enemyDelay: 0.85,
+    enemyDamage: 10,
+    projectileSpeed: 68,
+    fireCooldown: 0.11,
+    autoAimAngle: 0.052,
+    mobileAutoAimAngle: 0.075,
+    scoreMultiplier: 1.5,
+  },
   training: {
     label: "TẬP LUYỆN",
     help: "AUTO-FIRE RỘNG",
@@ -102,6 +122,26 @@ const GAME_MODES = {
     mobileAutoAimAngle: 0.054,
     scoreMultiplier: 1.35,
   },
+  nightmare: {
+    label: "ÁC MỘNG",
+    help: "KHÔNG THA THỨ",
+    health: 70,
+    playerSpeed: 20,
+    waveBase: 10,
+    waveScale: 2.6,
+    mobileCap: 18,
+    desktopCap: 28,
+    ufoHpBase: 3,
+    ufoHpEvery: 2,
+    ufoSpeed: 1.55,
+    enemyDelay: 0.58,
+    enemyDamage: 22,
+    projectileSpeed: 65,
+    fireCooldown: 0.12,
+    autoAimAngle: 0.028,
+    mobileAutoAimAngle: 0.046,
+    scoreMultiplier: 2.0,
+  },
 };
 const tmpVec3 = new THREE.Vector3();
 const tmpVec3B = new THREE.Vector3();
@@ -159,6 +199,15 @@ const particles = [];
 const decorativeSpinners = [];
 
 const materials = createMaterials();
+
+/* --- Auto-select mode from URL param (menu page redirect) --- */
+(function applyUrlMode() {
+  const params = new URLSearchParams(window.location.search);
+  const urlMode = params.get("mode");
+  if (urlMode && GAME_MODES[urlMode]) {
+    state.modeId = urlMode;
+  }
+})();
 
 buildWorld();
 player.group = createTank();
