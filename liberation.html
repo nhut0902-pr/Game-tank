@@ -25,9 +25,25 @@
       <button class="restart-btn" id="restart-btn" aria-label="Khởi động lại">↻</button>
     </header>
 
+    <!-- Control Selection -->
+    <div class="control-selector">
+      <span>Cách lái xe:</span>
+      <button id="btn-mode-tap" class="active">Bấm Liên Tục</button>
+      <button id="btn-mode-drag">Kéo Thả Lấy Đà</button>
+    </div>
+
     <!-- Hướng dẫn điều khiển -->
     <div class="instruction" id="instruction">
       <span>BẤM LIÊN TỤC VÀO MÀN HÌNH HOẶC PHÍM SPACE ĐỂ ĐẠP GA!</span>
+    </div>
+
+    <!-- Post Game Actions (Hidden during gameplay) -->
+    <div class="post-game-actions" id="post-game-actions" style="display: none;">
+      <div class="score-form">
+        <input type="text" id="player-name" placeholder="Nhập tên chiến sĩ..." maxlength="20">
+        <button id="btn-submit-score">Lưu Kỷ Lục</button>
+      </div>
+      <button id="btn-screenshot" class="flex-btn">📸 Chụp Ảnh Khoe 30/4</button>
     </div>
 
     <!-- Main Game Scene -->
@@ -69,25 +85,22 @@
         </div>
         
         <div class="leaderboard-block">
-          <h2>Chiến sĩ hăng hái</h2>
-          <p class="note">*Các tên được đặt ngẫu nhiên cho người chơi, không mang mục đích khác.</p>
+          <h2>Chiến sĩ hăng hái (Bảng Xếp Hạng)</h2>
+          <p class="note">*Dữ liệu cập nhật từ căn cứ chỉ huy (Firebase).</p>
           <table class="leaderboard-table">
             <thead>
               <tr>
+                <th>Hạng</th>
                 <th>Chiến sĩ</th>
-                <th>Cổng trái</th>
-                <th>Cổng phải</th>
-                <th>Tốc độ xe tăng</th>
+                <th>Tốc độ húc</th>
               </tr>
             </thead>
-            <tbody>
-              <tr><td>Bún Bò Ú Trấu</td><td>Mất Hút</td><td>Vũ Trụ 2</td><td>Không Tưởng 2</td></tr>
-              <tr><td>Chả Giò Cận Đất</td><td>Mất Hút</td><td>San Rô - Dê</td><td>Không Tưởng</td></tr>
-              <tr><td>Gỏi Cuốn Quê Hương</td><td>Không Tìm Thấy</td><td>Mất Hút</td><td>Quái Xế</td></tr>
-              <tr><td>Bánh Canh Cận Đát</td><td>Mất Hút</td><td>VLU</td><td>Quái Xế</td></tr>
-              <tr class="highlight"><td>Chả Giò Cháy Cạnh (Bạn)</td><td>Nhật Bản</td><td>Quận 2</td><td>Quái Xế</td></tr>
+            <tbody id="leaderboard-body">
+              <tr><td colspan="3" style="text-align:center;">Đang tải dữ liệu...</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
         </div>
       </div>
 

@@ -103,6 +103,67 @@ body {
   100% { opacity: 1; }
 }
 
+/* CONTROL SELECTOR & POST GAME */
+.control-selector {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #fff;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+}
+.control-selector button {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  background: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.control-selector button.active {
+  background: #b30000;
+  color: #fff;
+  border-color: #b30000;
+}
+
+.post-game-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 15px;
+  background: #e8f5e9;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+.score-form {
+  display: flex;
+  gap: 10px;
+}
+.score-form input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.score-form button, .flex-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: #2e7d32;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+.flex-btn {
+  background: #1976d2;
+}
+.score-form button:hover, .flex-btn:hover {
+  opacity: 0.9;
+}
+
 /* SCENE */
 .scene {
   flex: 1;

@@ -1,3 +1,34 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+// ==========================================
+// 1. CẤU HÌNH FIREBASE (BẠN HÃY ĐIỀN VÀO ĐÂY)
+// ==========================================
+const firebaseConfig = {
+  // Thay thế các dòng dưới đây bằng config từ Firebase Console của bạn:
+  // apiKey: "YOUR_API_KEY",
+  // authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  // projectId: "YOUR_PROJECT_ID",
+  // storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  // appId: "YOUR_APP_ID"
+};
+
+let db = null;
+try {
+  if (firebaseConfig.apiKey) {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+  } else {
+    console.warn("⚠️ Chưa điền cấu hình Firebase. Bảng xếp hạng sẽ chạy ở chế độ giả lập (Offline).");
+  }
+} catch (e) {
+  console.error("Lỗi khởi tạo Firebase:", e);
+}
+
+// ==========================================
+// 2. GAME LOGIC
+// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
   const tank = document.getElementById("tank");
   const gateContainer = document.querySelector(".gate-container");
@@ -6,51 +37,137 @@ document.addEventListener("DOMContentLoaded", () => {
   const speedEl = document.getElementById("speed");
   const restartBtn = document.getElementById("restart-btn");
   const instructionEl = document.getElementById("instruction");
+  
+  // UI Elements mới
+  const btnModeTap = document.getElementById("btn-mode-tap");
+  const btnModeDrag = document.getElementById("btn-mode-drag");
+  const postGameActions = document.getElementById("post-game-actions");
+  const btnScreenshot = document.getElementById("btn-screenshot");
+  const btnSubmitScore = document.getElementById("btn-submit-score");
+  const playerNameInput = document.getElementById("player-name");
+  const leaderboardBody = document.getElementById("leaderboard-body");
 
   let animationId;
   let lastTime = 0;
   let isCrashed = false;
+  let finalImpactSpeed = 0;
+  
+  // Chế độ điều khiển ('tap' hoặc 'drag')
+  let controlMode = 'tap'; 
+  
+  // Drag state
+  let isDragging = false;
+  let dragStartX = 0;
+  let currentDragDist = 0;
   
   // Game parameters
   const initialDistance = 150; // meters
   let distance = initialDistance;
   let speed = 0; // km/h
-  const maxSpeed = 70; // max km/h
+  const maxSpeed = 80; // max km/h
   const startX = 0; 
-  const endX = -800; // The transform X offset when reaching the gates
+
+  // Lắng nghe Firebase (nếu có) hoặc render giả
+  setupLeaderboard();
+
+  // --- CONTROL SELECTION ---
+  btnModeTap.addEventListener("click", () => setControlMode('tap'));
+  btnModeDrag.addEventListener("click", () => setControlMode('drag'));
+
+  function setControlMode(mode) {
+    controlMode = mode;
+    btnModeTap.classList.toggle("active", mode === 'tap');
+    btnModeDrag.classList.toggle("active", mode === 'drag');
+    resetGame();
+  }
 
   function accelerate(amount) {
-    if (isCrashed) return;
+    if (isCrashed || controlMode !== 'tap') return;
     speed += amount;
     if (speed > maxSpeed) speed = maxSpeed;
     tank.classList.add("moving");
-    instructionEl.style.opacity = '0.5'; // dim instruction when playing
+    instructionEl.style.opacity = '0.5';
   }
 
-  // Handle Input
+  // Handle Input - TAP
   window.addEventListener("keydown", (e) => {
-    if (e.code === "Space") {
+    if (e.code === "Space" && controlMode === 'tap') {
+      if (document.activeElement === playerNameInput) return; // Đang gõ tên
       e.preventDefault();
       accelerate(6);
     }
   });
 
-  // Touch or click to accelerate
-  window.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("button") || e.target.closest("a")) return;
-    e.preventDefault(); // Ngăn zoom hoặc cuộn vô tình trên mobile
-    accelerate(6);
+  document.getElementById("scene").addEventListener("pointerdown", (e) => {
+    if (isCrashed) return;
+    
+    if (controlMode === 'tap') {
+      e.preventDefault();
+      accelerate(6);
+    } else if (controlMode === 'drag') {
+      // Bắt đầu kéo (Ná bắn)
+      e.preventDefault();
+      isDragging = true;
+      dragStartX = e.clientX;
+      tank.style.transition = 'none'; // Tắt mượt để kéo ngay lập tức
+      instructionEl.style.opacity = '0.5';
+    }
   }, { passive: false });
+
+  // Handle Input - DRAG
+  window.addEventListener("pointermove", (e) => {
+    if (!isDragging || controlMode !== 'drag' || isCrashed) return;
+    e.preventDefault();
+    // Kéo ngược về bên phải (clientX tăng) -> Tích tụ lực
+    const deltaX = e.clientX - dragStartX;
+    if (deltaX > 0) {
+      currentDragDist = Math.min(deltaX, 300); // Kéo lùi tối đa 300px
+      // Cập nhật vị trí kéo lùi (tạm thời)
+      const screenWidth = window.innerWidth;
+      const gateHitPoint = screenWidth * 0.35; 
+      const tankStartX = screenWidth + 300; 
+      const dynamicEndX = -(tankStartX - gateHitPoint - 280); 
+      const progress = 1 - (distance / initialDistance);
+      const baseCurrentX = startX + (dynamicEndX - startX) * progress;
+      
+      // Vẽ xe lùi lại một chút
+      tank.style.transform = `translateX(${baseCurrentX + currentDragDist}px)`;
+    }
+  }, { passive: false });
+
+  window.addEventListener("pointerup", (e) => {
+    if (!isDragging || controlMode !== 'drag' || isCrashed) return;
+    isDragging = false;
+    tank.style.transition = 'transform 0.1s ease-out';
+    
+    // Bắn! Vận tốc tỉ lệ với độ kéo lùi (tối đa maxSpeed)
+    if (currentDragDist > 20) {
+      const power = (currentDragDist / 300) * maxSpeed;
+      speed = power;
+      tank.classList.add("moving");
+    }
+    currentDragDist = 0;
+  });
 
   function resetGame() {
     isCrashed = false;
+    isDragging = false;
     gateContainer.classList.remove("crashed");
     tank.classList.remove("moving");
+    tank.style.transition = 'none';
+    postGameActions.style.display = 'none';
     distance = initialDistance;
     speed = 0;
     lastTime = 0;
+    finalImpactSpeed = 0;
+    
     instructionEl.style.opacity = '1';
-    instructionEl.querySelector("span").textContent = "BẤM LIÊN TỤC VÀO MÀN HÌNH HOẶC PHÍM SPACE ĐỂ ĐẠP GA!";
+    instructionEl.style.color = '#b30000';
+    if (controlMode === 'tap') {
+      instructionEl.querySelector("span").textContent = "BẤM LIÊN TỤC VÀO MÀN HÌNH HOẶC PHÍM SPACE ĐỂ ĐẠP GA!";
+    } else {
+      instructionEl.querySelector("span").textContent = "CHẠM VÀO MÀN HÌNH RỒI KÉO LÙI VỀ SAU ĐỂ LẤY ĐÀ TÔNG CỔNG!";
+    }
     
     cancelAnimationFrame(animationId);
     animationId = requestAnimationFrame(update);
@@ -58,49 +175,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function update(timestamp) {
     if (!lastTime) lastTime = timestamp;
-    const dt = (timestamp - lastTime) / 1000; // in seconds
+    const dt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
     
-    // Tính toán lại endX để tương thích mọi kích thước màn hình (Mobile/Desktop)
-    // Cổng nằm ở khoảng 35% từ bên trái màn hình. Xe tăng rộng 280px.
     const screenWidth = window.innerWidth;
     const gateHitPoint = screenWidth * 0.35; 
-    // Vị trí ban đầu của xe tăng (css: right -300px) tức là x = screenWidth + 300
-    // Để đầu xe tăng (cạnh trái) chạm cổng:
     const tankStartX = screenWidth + 300; 
     const dynamicEndX = -(tankStartX - gateHitPoint - 280); 
 
     if (!isCrashed) {
-      // Natural deceleration (friction)
-      if (speed > 0) {
-        speed -= 15 * dt; // lose speed over time if not pushing
-        if (speed < 0) speed = 0;
-      }
-      
-      if (speed === 0 && distance < initialDistance) {
-        tank.classList.remove("moving");
-      }
+      if (!isDragging) {
+        // Ma sát làm giảm tốc
+        if (speed > 0) {
+          speed -= (controlMode === 'tap' ? 15 : 5) * dt; // Drag giữ tốc độ lâu hơn 1 chút
+          if (speed < 0) speed = 0;
+        }
+        
+        if (speed === 0 && distance < initialDistance) {
+          tank.classList.remove("moving");
+        }
 
-      // Move distance based on speed
-      // 1 km/h mapped to roughly 1 m/s for arcade feel
-      distance -= speed * dt;
-      
-      if (distance <= 0) {
-        distance = 0;
-        crash(speed);
-      }
+        // Xe di chuyển
+        distance -= speed * dt;
+        
+        if (distance <= 0) {
+          distance = 0;
+          crash(speed);
+        }
 
-      // Update UI
-      speedEl.textContent = `${Math.floor(speed)}km/h`;
-      if (!isCrashed) {
-        distLeftEl.textContent = `${Math.floor(distance)}m`;
-        distRightEl.textContent = `${Math.floor(distance)}m`;
-      }
+        // Cập nhật UI
+        speedEl.textContent = `${Math.floor(speed)}km/h`;
+        if (!isCrashed) {
+          distLeftEl.textContent = `${Math.floor(distance)}m`;
+          distRightEl.textContent = `${Math.floor(distance)}m`;
+        }
 
-      // Update Visuals
-      const progress = 1 - (distance / initialDistance);
-      const currentX = startX + (dynamicEndX - startX) * progress;
-      tank.style.transform = `translateX(${currentX}px)`;
+        // Vẽ xe tăng nếu không đang kéo lùi
+        const progress = 1 - (distance / initialDistance);
+        const currentX = startX + (dynamicEndX - startX) * progress;
+        tank.style.transform = `translateX(${currentX}px)`;
+      }
     }
 
     animationId = requestAnimationFrame(update);
@@ -108,29 +222,170 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function crash(impactSpeed) {
     isCrashed = true;
+    finalImpactSpeed = Math.floor(impactSpeed);
     tank.classList.remove("moving");
     speedEl.textContent = "0km/h";
     
-    // Check if speed is enough to break gates
     if (impactSpeed >= 25) {
       gateContainer.classList.add("crashed");
       distLeftEl.textContent = "Bay sang Quận 2";
       distRightEl.textContent = "Mất hút";
-      instructionEl.querySelector("span").textContent = "THÀNH CÔNG! CHIẾN DỊCH HỒ CHÍ MINH TOÀN THẮNG!";
-      instructionEl.style.color = "#008000"; // green text
+      instructionEl.querySelector("span").textContent = `THÀNH CÔNG! TỐC ĐỘ: ${finalImpactSpeed}KM/H - CHIẾN DỊCH HỒ CHÍ MINH TOÀN THẮNG!`;
+      instructionEl.style.color = "#008000";
     } else {
-      // Not fast enough
       distLeftEl.textContent = "Chưa vỡ";
       distRightEl.textContent = "Móp nhẹ";
-      instructionEl.querySelector("span").textContent = `THẤT BẠI! TỐC ĐỘ QUÁ CHẬM (${Math.floor(impactSpeed)}km/h). HÃY ĐẠP GA NHANH HƠN NỮA!`;
+      instructionEl.querySelector("span").textContent = `THẤT BẠI! TỐC ĐỘ QUÁ CHẬM (${finalImpactSpeed}km/h). HÃY THỬ LẠI!`;
       instructionEl.style.color = "#b30000";
     }
     instructionEl.style.opacity = '1';
+    
+    // Hiển thị panel cuối game (Khoe + Lưu điểm)
+    postGameActions.style.display = 'flex';
   }
 
   restartBtn.addEventListener("click", () => {
     resetGame();
   });
+
+  // ==========================================
+  // 3. TÍNH NĂNG CHỤP ẢNH KHOE (HTML2CANVAS)
+  // ==========================================
+  btnScreenshot.addEventListener("click", async () => {
+    const orgText = btnScreenshot.textContent;
+    btnScreenshot.textContent = "Đang chụp...";
+    btnScreenshot.disabled = true;
+    
+    try {
+      // Ẩn các nút không cần thiết trước khi chụp
+      postGameActions.style.display = 'none';
+      document.querySelector('.control-selector').style.display = 'none';
+      
+      // Load html2canvas dynamically nếu chưa có trong HTML (đề phòng)
+      if (typeof html2canvas === 'undefined') {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = "https://html2canvas.hertzen.com/dist/html2canvas.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const canvas = await html2canvas(document.body, {
+        allowTaint: true,
+        useCORS: true,
+        scale: 2 // Chất lượng cao
+      });
+      
+      // Hiện lại nút
+      postGameActions.style.display = 'flex';
+      document.querySelector('.control-selector').style.display = 'flex';
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      const link = document.createElement('a');
+      link.download = 'huc-cong-30-4.jpg';
+      link.href = imgData;
+      link.click();
+    } catch (err) {
+      console.error("Lỗi chụp ảnh:", err);
+      alert("Lỗi khi chụp ảnh. Vui lòng thử lại!");
+      postGameActions.style.display = 'flex';
+      document.querySelector('.control-selector').style.display = 'flex';
+    }
+    
+    btnScreenshot.textContent = orgText;
+    btnScreenshot.disabled = false;
+  });
+
+  // ==========================================
+  // 4. FIREBASE LEADERBOARD LOGIC
+  // ==========================================
+  btnSubmitScore.addEventListener("click", async () => {
+    const name = playerNameInput.value.trim();
+    if (!name) {
+      alert("Vui lòng nhập tên chiến sĩ!");
+      return;
+    }
+    if (finalImpactSpeed <= 0) {
+      alert("Tốc độ không hợp lệ!");
+      return;
+    }
+
+    btnSubmitScore.textContent = "Đang lưu...";
+    btnSubmitScore.disabled = true;
+
+    if (db) {
+      try {
+        await addDoc(collection(db, "leaderboard"), {
+          name: name,
+          speed: finalImpactSpeed,
+          timestamp: serverTimestamp()
+        });
+        alert("Lưu kỷ lục thành công!");
+      } catch (err) {
+        console.error("Lỗi lưu điểm:", err);
+        alert("Có lỗi xảy ra khi lưu vào hệ thống chỉ huy!");
+      }
+    } else {
+      // Giả lập lưu offline
+      let localScores = JSON.parse(localStorage.getItem('fakeLeaderboard') || '[]');
+      localScores.push({ name: name, speed: finalImpactSpeed });
+      localStorage.setItem('fakeLeaderboard', JSON.stringify(localScores));
+      alert("Lưu kỷ lục nội bộ thành công (Chưa có kết nối Firebase)!");
+      renderLocalLeaderboard();
+    }
+    
+    btnSubmitScore.textContent = "Lưu Kỷ Lục";
+    btnSubmitScore.disabled = false;
+  });
+
+  function setupLeaderboard() {
+    if (db) {
+      const q = query(collection(db, "leaderboard"), orderBy("speed", "desc"), limit(5));
+      onSnapshot(q, (snapshot) => {
+        leaderboardBody.innerHTML = '';
+        if (snapshot.empty) {
+          leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Chưa có kỷ lục nào.</td></tr>';
+          return;
+        }
+        let index = 1;
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>#${index++}</td><td>${data.name}</td><td><strong>${data.speed} km/h</strong></td>`;
+          leaderboardBody.appendChild(tr);
+        });
+      }, (error) => {
+        console.error("Lỗi đọc bảng xếp hạng:", error);
+      });
+    } else {
+      renderLocalLeaderboard();
+    }
+  }
+
+  function renderLocalLeaderboard() {
+    let localScores = JSON.parse(localStorage.getItem('fakeLeaderboard') || '[]');
+    localScores.sort((a, b) => b.speed - a.speed);
+    localScores = localScores.slice(0, 5);
+    
+    if (localScores.length === 0) {
+      // Dữ liệu mẫu ban đầu
+      localScores = [
+        {name: "Bùi Quang Thận", speed: 65},
+        {name: "Vũ Đăng Toàn", speed: 60},
+        {name: "Bún Bò Ú Trấu", speed: 50},
+        {name: "Chiến sĩ Ẩn Danh", speed: 45}
+      ];
+    }
+    
+    leaderboardBody.innerHTML = '';
+    localScores.forEach((data, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>#${i + 1}</td><td>${data.name}</td><td><strong>${data.speed} km/h</strong></td>`;
+      leaderboardBody.appendChild(tr);
+    });
+  }
 
   // Start loop
   animationId = requestAnimationFrame(update);
