@@ -38,8 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Touch or click to accelerate
   window.addEventListener("pointerdown", (e) => {
     if (e.target.closest("button") || e.target.closest("a")) return;
+    e.preventDefault(); // Ngăn zoom hoặc cuộn vô tình trên mobile
     accelerate(6);
-  });
+  }, { passive: false });
 
   function resetGame() {
     isCrashed = false;
@@ -59,6 +60,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!lastTime) lastTime = timestamp;
     const dt = (timestamp - lastTime) / 1000; // in seconds
     lastTime = timestamp;
+    
+    // Tính toán lại endX để tương thích mọi kích thước màn hình (Mobile/Desktop)
+    // Cổng nằm ở khoảng 35% từ bên trái màn hình. Xe tăng rộng 280px.
+    const screenWidth = window.innerWidth;
+    const gateHitPoint = screenWidth * 0.35; 
+    // Vị trí ban đầu của xe tăng (css: right -300px) tức là x = screenWidth + 300
+    // Để đầu xe tăng (cạnh trái) chạm cổng:
+    const tankStartX = screenWidth + 300; 
+    const dynamicEndX = -(tankStartX - gateHitPoint - 280); 
 
     if (!isCrashed) {
       // Natural deceleration (friction)
@@ -89,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Update Visuals
       const progress = 1 - (distance / initialDistance);
-      const currentX = startX + (endX - startX) * progress;
+      const currentX = startX + (dynamicEndX - startX) * progress;
       tank.style.transform = `translateX(${currentX}px)`;
     }
 

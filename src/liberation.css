@@ -23,6 +23,9 @@ body {
   overflow-x: hidden;
   display: flex;
   justify-content: center;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #game-container {
