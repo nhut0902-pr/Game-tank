@@ -117,11 +117,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getDynamicEndX() {
     const sceneEl = document.getElementById("scene");
+    const tankEl = document.getElementById("tank");
     const sceneWidth = sceneEl.clientWidth;
-    const tankWidth = 280;
-    // Tank start position is right: -300px
-    // That means tank's left edge is at (sceneWidth + 300 - tankWidth)
-    const tankStartLeftEdge = sceneWidth + 300 - tankWidth;
+    const tankWidth = tankEl.clientWidth;
+    
+    // CSS set tank right: 5%. This means tank's right edge is at 95% of sceneWidth.
+    // Tank's left edge is at (0.95 * sceneWidth) - tankWidth
+    const tankStartLeftEdge = (0.95 * sceneWidth) - tankWidth;
     
     // Gate is at left: 5%, left-gate is 40% of 60% = 24%. 5% + 24% = 29%.
     // So the impact point is at 30% of the scene.
