@@ -5,13 +5,14 @@ import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, se
 // 1. CẤU HÌNH FIREBASE (BẠN HÃY ĐIỀN VÀO ĐÂY)
 // ==========================================
 const firebaseConfig = {
-  // Thay thế các dòng dưới đây bằng config từ Firebase Console của bạn:
-  // apiKey: "YOUR_API_KEY",
-  // authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  // projectId: "YOUR_PROJECT_ID",
-  // storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  // appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAqbG5w9WAFc7J_tGuXUWXqVeZhcs94Kuk",
+  authDomain: "vinagame-9b378.firebaseapp.com",
+  databaseURL: "https://vinagame-9b378-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "vinagame-9b378",
+  storageBucket: "vinagame-9b378.firebasestorage.app",
+  messagingSenderId: "592562619300",
+  appId: "1:592562619300:web:e901927850a0522b07b731",
+  measurementId: "G-SWP61QLJTL"
 };
 
 let db = null;
