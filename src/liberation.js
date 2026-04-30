@@ -115,6 +115,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, { passive: false });
 
+  function getDynamicEndX() {
+    const sceneEl = document.getElementById("scene");
+    const sceneWidth = sceneEl.clientWidth;
+    const tankWidth = 280;
+    // Tank start position is right: -300px
+    // That means tank's left edge is at (sceneWidth + 300 - tankWidth)
+    const tankStartLeftEdge = sceneWidth + 300 - tankWidth;
+    
+    // Gate is at left: 5%, left-gate is 40% of 60% = 24%. 5% + 24% = 29%.
+    // So the impact point is at 30% of the scene.
+    const gateHitPoint = sceneWidth * 0.3; 
+    
+    // Total travel distance
+    return -(tankStartLeftEdge - gateHitPoint); 
+  }
+
   // Handle Input - DRAG
   window.addEventListener("pointermove", (e) => {
     if (!isDragging || controlMode !== 'drag' || isCrashed) return;
@@ -123,11 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const deltaX = e.clientX - dragStartX;
     if (deltaX > 0) {
       currentDragDist = Math.min(deltaX, 300); // Kéo lùi tối đa 300px
-      // Cập nhật vị trí kéo lùi (tạm thời)
-      const screenWidth = window.innerWidth;
-      const gateHitPoint = screenWidth * 0.35; 
-      const tankStartX = screenWidth + 300; 
-      const dynamicEndX = -(tankStartX - gateHitPoint - 280); 
+      const dynamicEndX = getDynamicEndX();
       const progress = 1 - (distance / initialDistance);
       const baseCurrentX = startX + (dynamicEndX - startX) * progress;
       
@@ -179,10 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
     
-    const screenWidth = window.innerWidth;
-    const gateHitPoint = screenWidth * 0.35; 
-    const tankStartX = screenWidth + 300; 
-    const dynamicEndX = -(tankStartX - gateHitPoint - 280); 
+    const dynamicEndX = getDynamicEndX();
 
     if (!isCrashed) {
       if (!isDragging) {
@@ -302,6 +311,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // 4. FIREBASE LEADERBOARD LOGIC
   // ==========================================
+  
+  function saveLocalAndRender(name, speed) {
+    let localScores = JSON.parse(localStorage.getItem('fakeLeaderboard') || '[]');
+    localScores.push({ name: name, speed: speed });
+    localStorage.setItem('fakeLeaderboard', JSON.stringify(localScores));
+    renderLocalLeaderboard();
+  }
+
   btnSubmitScore.addEventListener("click", async () => {
     const name = playerNameInput.value.trim();
     if (!name) {
@@ -325,16 +342,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         alert("Lưu kỷ lục thành công!");
       } catch (err) {
-        console.error("Lỗi lưu điểm:", err);
-        alert("Có lỗi xảy ra khi lưu vào hệ thống chỉ huy!");
+        console.error("Lỗi lưu điểm (Firebase permission?):", err);
+        alert("Có lỗi chặn quyền ghi từ Firebase (Bạn chưa cấp quyền ghi trong Firestore Rules). Tạm thời lưu offline máy bạn!");
+        saveLocalAndRender(name, finalImpactSpeed);
       }
     } else {
-      // Giả lập lưu offline
-      let localScores = JSON.parse(localStorage.getItem('fakeLeaderboard') || '[]');
-      localScores.push({ name: name, speed: finalImpactSpeed });
-      localStorage.setItem('fakeLeaderboard', JSON.stringify(localScores));
       alert("Lưu kỷ lục nội bộ thành công (Chưa có kết nối Firebase)!");
-      renderLocalLeaderboard();
+      saveLocalAndRender(name, finalImpactSpeed);
     }
     
     btnSubmitScore.textContent = "Lưu Kỷ Lục";

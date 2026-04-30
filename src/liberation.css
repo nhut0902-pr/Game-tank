@@ -16,22 +16,29 @@
   padding: 0;
 }
 
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-main);
   overflow-x: hidden;
-  display: flex;
-  justify-content: center;
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
+  display: block;
 }
 
 #game-container {
   width: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
   min-height: 100vh;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   background: white;
@@ -219,18 +226,25 @@ body {
 .gate-door {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
-  transform-origin: right bottom;
   transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.crashed .left-gate {
-  transform: rotate(-75deg) translate(-20px, 50px);
+.left-door {
+  transform-origin: bottom right;
+}
+
+.right-door {
+  transform-origin: bottom left;
+}
+
+.crashed .left-door {
+  transform: rotate(-75deg);
   opacity: 0.5;
   transition: all 0.8s ease-in;
 }
 
-.crashed .right-gate {
-  transform: rotate(85deg) translate(50px, 20px);
+.crashed .right-door {
+  transform: rotate(85deg);
   opacity: 0.5;
   transition: all 0.6s ease-in;
 }
