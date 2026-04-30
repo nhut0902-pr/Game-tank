@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { getDatabase, ref, push, query, orderByChild, limitToLast, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
 // ==========================================
 // 1. CẤU HÌNH FIREBASE (BẠN HÃY ĐIỀN VÀO ĐÂY)
@@ -19,7 +19,7 @@ let db = null;
 try {
   if (firebaseConfig.apiKey) {
     const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
+    db = getDatabase(app);
   } else {
     console.warn("⚠️ Chưa điền cấu hình Firebase. Bảng xếp hạng sẽ chạy ở chế độ giả lập (Offline).");
   }
@@ -337,7 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (db) {
       try {
-        await addDoc(collection(db, "leaderboard"), {
+        await push(ref(db, "leaderboard"), {
           name: name,
           speed: finalImpactSpeed,
           timestamp: serverTimestamp()
@@ -359,16 +359,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setupLeaderboard() {
     if (db) {
-      const q = query(collection(db, "leaderboard"), orderBy("speed", "desc"), limit(5));
-      onSnapshot(q, (snapshot) => {
+      const q = query(ref(db, "leaderboard"), orderByChild("speed"), limitToLast(5));
+      onValue(q, (snapshot) => {
         leaderboardBody.innerHTML = '';
-        if (snapshot.empty) {
+        if (!snapshot.exists()) {
           leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Chưa có kỷ lục nào.</td></tr>';
           return;
         }
+        let scores = [];
+        snapshot.forEach((child) => {
+          scores.push(child.val());
+        });
+        scores.reverse(); // Đảo ngược để có thứ tự giảm dần
+        
         let index = 1;
-        snapshot.forEach((doc) => {
-          const data = doc.data();
+        scores.forEach((data) => {
           const tr = document.createElement("tr");
           tr.innerHTML = `<td>#${index++}</td><td>${data.name}</td><td><strong>${data.speed} km/h</strong></td>`;
           leaderboardBody.appendChild(tr);
